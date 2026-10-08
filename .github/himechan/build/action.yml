@@ -55,6 +55,10 @@ runs:
         dotnet build --no-restore -c Release RotationSolver/RotationSolver.csproj --output .\build @props
         if ($LASTEXITCODE -ne 0) { throw "dotnet build failed ($LASTEXITCODE)" }
 
+    - name: Himechan manifest (inside latest.zip)
+      shell: pwsh
+      run: ./.github/himechan/patch-manifest.ps1 -BuildDir build/RotationSolver -Repo "${{ github.repository }}"
+
     - name: Verify Output
       id: verify
       shell: pwsh

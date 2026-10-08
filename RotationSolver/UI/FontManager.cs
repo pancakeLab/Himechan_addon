@@ -19,8 +19,7 @@ namespace RotationSolver.UI
 			// Round to a stable integer key to avoid excessive variants.
 			var key = Math.Max(1, (int)MathF.Round(size));
 
-			return Resolve(_handles, GameFontCapacity, key, static px => Svc.PluginInterface.UiBuilder.FontAtlas.NewGameFontHandle(
-				new Dalamud.Interface.GameFonts.GameFontStyle(Dalamud.Interface.GameFonts.GameFontFamily.Axis, px)));
+			return Resolve(_handles, GameFontCapacity, key, static px => Himechan.HimechanFonts.CreateHeaderFont(px)); // HIMECHAN-HOOK: HeaderFont (was NewGameFontHandle(Axis, px))
 		}
 
 		public static ImFontPtr GetDefaultFont(float scale)

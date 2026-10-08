@@ -246,5 +246,20 @@ internal static partial class HimechanKoreanStrings
 		Add("Here's what you missed since you were last here", "지난 방문 이후 바뀐 내용입니다");
 		Add("It looks like you might be new here! Let's get you started!", "처음 오신 것 같네요! 시작을 도와드릴게요!");
 		Add("Recent Changes:", "최근 변경 사항:");
+
+		// MainWindowTab subtitles (UI/MainWindow/MainWindowTab.cs)
+		Add("Useful information and macro list.", "유용한 정보와 매크로 목록.");
+		Add("Rotation specific configs.", "로테이션별 설정.");
+		Add("Configure Duty Rotation.", "임무 로테이션 설정.");
+		Add("Configure abilities and custom conditions for your current job.", "현재 직업의 기술과 사용자 조건 설정.");
+		Add("Configure reactive actions and status effect lists.", "반응 기술과 상태 효과 목록 설정.");
+		Add("Configure basic settings.", "기본 설정.");
+		Add("Configure user interface settings.", "인터페이스 설정.");
+		Add("Configure general action usage and control settings.", "기술 사용·제어 설정.");
+		Add("Configure targeting settings.", "대상 지정 설정.");
+		Add("Duty specific settings.", "임무별 설정.");
+		Add("Configure optional helpful features.", "선택적 부가 기능 설정.");
+		Add("Debug options for developers and rotation writers (disable when not in use).", "개발자·로테이션 작성자용 디버그 옵션(쓰지 않을 때는 끄세요).");
+		Add("Configure AutoDuty settings and view related information.", "AutoDuty 설정과 관련 정보.");
 	}
 }

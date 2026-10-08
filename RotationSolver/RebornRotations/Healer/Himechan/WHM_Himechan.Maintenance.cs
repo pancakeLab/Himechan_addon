@@ -104,7 +104,10 @@ public sealed partial class WHM_Himechan
 
 	private void LogWeaveDefer(IAction? nextGCD)
 	{
-		if (IBaseAction.ActionPreview)
+		// Only worth logging when a real GCD is planned and the budget blocked the weave; being mid-cast or
+		// having no GCD candidate (RSR passes a placeholder ability then) is the expected case every GCD.
+		if (IBaseAction.ActionPreview || Player?.IsCasting != false
+			|| nextGCD is not IBaseAction gcd || !gcd.Info.IsRealGCD)
 		{
 			return;
 		}

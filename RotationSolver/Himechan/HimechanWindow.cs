@@ -66,6 +66,7 @@ internal sealed class HimechanWindow : Window
 		{
 			settings.TranslateRsrUi = translate;
 			HimechanSettings.Save();
+			HimechanFonts.Rebuild();
 		}
 		ImGui.TextWrapped($"RSR의 영어 문구를 사전({HimechanLocalization.DictionaryCount}개)으로 바꿔 보여 줍니다. 사전에 없는 새 문구는 영어 그대로 보입니다. 직접 고치려면 설정 폴더의 ko.override.json에 {{\"영어 원문\": \"한국어\"}} 형식으로 적으세요.");
 		if (ImGui.Button("사전 다시 읽기"))
