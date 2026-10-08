@@ -91,13 +91,14 @@ jobs:
         run: |
           $latest = "${{ steps.upstream.outputs.latest }}"
           $title = "[sync] 한섭 Dalamud 대기: 원본 $latest 는 API ${{ steps.gate.outputs.api }} (한섭 상한 ${{ steps.gate.outputs.limit }})"
-          ./.github/himechan/sync-issue.ps1 -Title $title -Body @"
-원본 RSR **$latest** 가 Dalamud API 레벨 **${{ steps.gate.outputs.api }}** (SDK ${{ steps.gate.outputs.sdk }})로 올라갔습니다.
-``.github/himechan/kr-dalamud-api-level.txt`` 의 한섭 상한은 **${{ steps.gate.outputs.limit }}** 이라 병합·배포를 멈췄습니다.
-
-한섭 Dalamud(XIVLauncherKR)가 이 API 레벨로 올라온 것을 확인한 뒤, 그 파일의 숫자를 올려 커밋하면 다음 동기화에서 자동으로 병합·배포됩니다.
-실행: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-"@
+          $body = @(
+            "원본 RSR **$latest** 가 Dalamud API 레벨 **${{ steps.gate.outputs.api }}** (SDK ${{ steps.gate.outputs.sdk }})로 올라갔습니다.",
+            "``.github/himechan/kr-dalamud-api-level.txt`` 의 한섭 상한은 **${{ steps.gate.outputs.limit }}** 이라 병합·배포를 멈췄습니다.",
+            "",
+            "한섭 Dalamud(XIVLauncherKR)가 이 API 레벨로 올라온 것을 확인한 뒤, 그 파일의 숫자를 올려 커밋하면 다음 동기화에서 자동으로 병합·배포됩니다.",
+            "실행: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          ) -join "`n"
+          ./.github/himechan/sync-issue.ps1 -Title $title -Body $body
           "::warning::KR API gate: upstream $latest needs API ${{ steps.gate.outputs.api }} > KR limit ${{ steps.gate.outputs.limit }}; not merged"
 
       - name: Merge upstream into himechan
@@ -123,17 +124,15 @@ jobs:
         shell: pwsh
         run: |
           $latest = "${{ steps.upstream.outputs.latest }}"
-          ./.github/himechan/sync-issue.ps1 -Title "[sync] 병합 충돌: 원본 $latest" -Body @"
-원본 RSR **$latest** 를 ``himechan`` 에 병합하다 충돌이 났습니다. 아무것도 푸시하지 않았습니다.
-
-충돌 파일:
-``````
-${{ steps.merge.outputs.conflicts }}
-``````
-
-로컬에서 ``git fetch upstream --tags`` 후 ``git merge $latest`` 로 충돌을 풀고(``HIMECHAN-HOOK`` 주석 위치 확인), 빌드가 되면 ``himechan`` 에 푸시하세요. 그 뒤 ``Himechan Sync`` 를 수동 실행하면 릴리스까지 이어집니다.
-실행: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-"@
+          $body = @(
+            "원본 RSR **$latest** 를 ``himechan`` 에 병합하다 충돌이 났습니다. 아무것도 푸시하지 않았습니다.",
+            "",
+            "충돌 파일: ${{ steps.merge.outputs.conflicts }}",
+            "",
+            "로컬에서 ``git fetch upstream --tags`` 후 ``git merge $latest`` 로 충돌을 풀고(``HIMECHAN-HOOK`` 주석 위치 확인), 빌드가 되면 ``himechan`` 에 푸시하세요. 그 뒤 ``Himechan Sync`` 를 수동 실행하면 릴리스까지 이어집니다.",
+            "실행: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          ) -join "`n"
+          ./.github/himechan/sync-issue.ps1 -Title "[sync] 병합 충돌: 원본 $latest" -Body $body
 
       - name: Build merged tree
         id: build
@@ -145,13 +144,14 @@ ${{ steps.merge.outputs.conflicts }}
         shell: pwsh
         run: |
           $latest = "${{ steps.upstream.outputs.latest }}"
-          ./.github/himechan/sync-issue.ps1 -Title "[sync] 빌드 실패: 원본 $latest 병합본" -Body @"
-원본 RSR **$latest** 를 병합한 결과가 빌드되지 않았습니다(원본 API 변경 가능성). 아무것도 푸시하지 않았습니다.
-
-빌드 로그: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-
-로컬에서 병합 후 컴파일 오류를 고쳐 ``himechan`` 에 푸시하면 다음 동기화에서 릴리스됩니다.
-"@
+          $body = @(
+            "원본 RSR **$latest** 를 병합한 결과가 빌드되지 않았습니다(원본 API 변경 가능성). 아무것도 푸시하지 않았습니다.",
+            "",
+            "빌드 로그: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}",
+            "",
+            "로컬에서 병합 후 컴파일 오류를 고쳐 ``himechan`` 에 푸시하면 다음 동기화에서 릴리스됩니다."
+          ) -join "`n"
+          ./.github/himechan/sync-issue.ps1 -Title "[sync] 빌드 실패: 원본 $latest 병합본" -Body $body
 
       - name: Push main mirror and himechan
         if: steps.merge.outputs.merged == 'true' && env.DRY_RUN != 'true'
