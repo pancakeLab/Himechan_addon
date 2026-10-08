@@ -1,0 +1,73 @@
+# HIMECHAN: the one build recipe shared by himechan-build / himechan-sync / himechan-release.
+# Same steps as upstream publish.yaml (Dalamud latest.zip -> restore -> build --output .\build).
+name: Build RSR (Himechan)
+description: Builds RotationSolver with optional version properties and verifies build/RotationSolver/latest.zip
+
+inputs:
+  version:
+    description: Assembly/File/Package version to stamp (empty = leave default)
+    required: false
+    default: ''
+  informational_version:
+    description: InformationalVersion to stamp (empty = same as version)
+    required: false
+    default: ''
+
+outputs:
+  zip_sha256:
+    description: SHA256 of build/RotationSolver/latest.zip
+    value: ${{ steps.verify.outputs.zip_sha256 }}
+  manifest_version:
+    description: AssemblyVersion the Dalamud packager wrote into the packaged manifest
+    value: ${{ steps.verify.outputs.manifest_version }}
+
+runs:
+  using: composite
+  steps:
+    - name: Set up .NET
+      uses: actions/setup-dotnet@v5
+      with:
+        dotnet-version: '10.0.x'
+
+    - name: Download Dalamud Latest
+      shell: pwsh
+      run: |
+        Invoke-WebRequest -Uri https://goatcorp.github.io/dalamud-distrib/latest.zip -OutFile latest.zip
+        Expand-Archive -Force latest.zip -DestinationPath "$env:AppData\XIVLauncher\addon\Hooks\dev"
+
+    - name: Restore NuGet Packages
+      shell: pwsh
+      run: dotnet restore RotationSolver/RotationSolver.csproj
+
+    - name: Build Plugin
+      shell: pwsh
+      env:
+        HIMECHAN_VERSION: ${{ inputs.version }}
+        HIMECHAN_INFO_VERSION: ${{ inputs.informational_version }}
+      run: |
+        $props = @()
+        if ($env:HIMECHAN_VERSION) {
+          $v = $env:HIMECHAN_VERSION
+          $info = if ($env:HIMECHAN_INFO_VERSION) { $env:HIMECHAN_INFO_VERSION } else { $v }
+          # IncludeSourceRevisionInInformationalVersion=false: the SDK would otherwise append the full git sha again.
+          $props = @("-p:AssemblyVersion=$v", "-p:FileVersion=$v", "-p:PackageVersion=$v", "-p:InformationalVersion=$info", "-p:IncludeSourceRevisionInInformationalVersion=false")
+        }
+        dotnet build --no-restore -c Release RotationSolver/RotationSolver.csproj --output .\build @props
+        if ($LASTEXITCODE -ne 0) { throw "dotnet build failed ($LASTEXITCODE)" }
+
+    - name: Verify Output
+      id: verify
+      shell: pwsh
+      run: |
+        $zip = "build/RotationSolver/latest.zip"
+        if (-not (Test-Path $zip)) { Get-ChildItem -Recurse build | Select-Object FullName, Length | Format-Table -AutoSize; throw "latest.zip not found at $zip" }
+        $sha = (Get-FileHash $zip -Algorithm SHA256).Hash
+        $manifest = Get-Content build/RotationSolver/RotationSolver.json -Raw | ConvertFrom-Json
+        "latest.zip SHA256: $sha"
+        "packaged manifest: InternalName=$($manifest.InternalName) AssemblyVersion=$($manifest.AssemblyVersion) DalamudApiLevel=$($manifest.DalamudApiLevel)"
+        foreach ($dll in @("build/RotationSolver.dll", "build/RotationSolver.Basic.dll")) {
+          $v = [System.Diagnostics.FileVersionInfo]::GetVersionInfo((Resolve-Path $dll))
+          "{0}: FileVersion={1} ProductVersion={2}" -f (Split-Path $dll -Leaf), $v.FileVersion, $v.ProductVersion
+        }
+        "zip_sha256=$sha" | Out-File -Append -FilePath $env:GITHUB_OUTPUT
+        "manifest_version=$($manifest.AssemblyVersion)" | Out-File -Append -FilePath $env:GITHUB_OUTPUT
