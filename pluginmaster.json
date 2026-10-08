@@ -1,10 +1,10 @@
 [
   {
-    "Author": "pancakeLab (비공식 포크) / 원본: The Combat Reborn Team",
+    "Author": "pancakeLab (비공식 포크) / 원본: pancakeLab (비공식 포크) / 원본: The Combat Reborn Team",
     "Name": "Rotation Solver Reborn - 히메짱 WHM",
     "InternalName": "RotationSolver",
-    "AssemblyVersion": "7.5.6.1900",
-    "TestingAssemblyVersion": "7.5.6.1900",
+    "AssemblyVersion": "7.5.6.1901",
+    "TestingAssemblyVersion": "7.5.6.1901",
     "Description": "Rotation Solver Reborn(RSR)의 비공식 소스 포크입니다. 원본 RSR 전체에 백마도사 전용 로테이션 '히메짱 WHM'과 한국어 설정 창이 추가되어 있습니다.\n\n공식 RSR과 내부 이름이 같아 동시에 설치할 수 없습니다. 공식 RSR을 제거한 뒤 설치하세요. 기존 RSR 설정은 그대로 유지됩니다.\n\n원본 기준: RSR 7.5.6.19",
     "Punchline": "RSR 비공식 포크 + 히메짱 WHM 로테이션 (원본 7.5.6.19 기준)",
     "ApplicableVersion": "any",
@@ -33,11 +33,11 @@
     "IsHide": false,
     "IconUrl": "https://raw.githubusercontent.com/pancakeLab/Himechan_addon/himechan/.github/himechan/icon.png",
     "AcceptsFeedback": false,
-    "DownloadLinkInstall": "https://github.com/pancakeLab/Himechan_addon/releases/download/7.5.6.1900/latest.zip",
-    "DownloadLinkUpdate": "https://github.com/pancakeLab/Himechan_addon/releases/download/7.5.6.1900/latest.zip",
-    "DownloadLinkTesting": "https://github.com/pancakeLab/Himechan_addon/releases/download/7.5.6.1900/latest.zip",
-    "Changelog": "히메짱 WHM 포크 7.5.6.1900\n\n- 원본 RSR: 7.5.6.19 (https://github.com/FFXIV-CombatReborn/RotationSolverReborn/releases/tag/7.5.6.19)\n- 포크 커밋: cc2e0af1\n- latest.zip SHA256: 06161738CCFEDD015BC1D53EA818E64029569E853C836BD7C4514B44BDE2B866\n\n첫 테스트 릴리스 (게임 확인용)",
-    "LastUpdate": 1791458640,
+    "DownloadLinkInstall": "https://github.com/pancakeLab/Himechan_addon/releases/download/7.5.6.1901/latest.zip",
+    "DownloadLinkUpdate": "https://github.com/pancakeLab/Himechan_addon/releases/download/7.5.6.1901/latest.zip",
+    "DownloadLinkTesting": "https://github.com/pancakeLab/Himechan_addon/releases/download/7.5.6.1901/latest.zip",
+    "Changelog": "히메짱 WHM 포크 7.5.6.1901\n\n- 원본 RSR: 7.5.6.19 (https://github.com/FFXIV-CombatReborn/RotationSolverReborn/releases/tag/7.5.6.19)\n- 포크 커밋: d6703937\n- latest.zip SHA256: AE6F50E6FCA5B65C047F5E73E8640DA80A3970640F4F600E33CFA5C9D6E0E9DA\n\n제목 글꼴 한글 표시, 설치 목록에 히메짱 포크 표기, 위빙 로그 정리",
+    "LastUpdate": 1791462032,
     "DownloadCount": 0
   }
 ]
