@@ -1,3 +1,5 @@
+<p align="center"><img src="himechan/icon.png" alt="Himechan WHM" width="200"></p>
+
 > [!WARNING]
 > **This is NOT the official Rotation Solver Reborn repository.**
 > This is an unofficial personal fork that adds one custom White Mage rotation (히메짱 WHM).
