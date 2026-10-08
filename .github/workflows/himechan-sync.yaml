@@ -42,8 +42,8 @@ jobs:
       - name: Git identity
         shell: pwsh
         run: |
-          git config user.name "himechan-sync[bot]"
-          git config user.email "himechan-sync[bot]@users.noreply.github.com"
+          git config user.name "pancakeLab"
+          git config user.email "339415906+pancakeLab@users.noreply.github.com"
 
       - name: Find newest upstream release tag
         id: upstream
