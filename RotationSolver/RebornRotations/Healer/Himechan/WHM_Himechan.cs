@@ -152,7 +152,7 @@ public sealed partial class WHM_Himechan : WhiteMageRotation
 
 	private bool EmergencyAbilityCore(IAction nextGCD, out IAction? act)
 	{
-		if (TryHighEndAquaveil(out act))
+		if (TryHighEndAquaveil(nextGCD, out act))
 		{
 			return true;
 		}

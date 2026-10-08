@@ -21,6 +21,10 @@ internal static class HimechanHooks
 	private static ICustomRotation? _lastRotation;
 	private static bool _lastState;
 
+	/// <summary>True while RSR itself is inside action.Use() (the native hook sees RSR's own call, not a player input).</summary>
+	[ThreadStatic]
+	private static bool _rsrUsing;
+
 	private static WHM_Himechan? Himechan => DataCenter.CurrentRotation as WHM_Himechan;
 
 	public static void Init()
@@ -148,9 +152,9 @@ internal static class HimechanHooks
 		try
 		{
 			var whm = Himechan;
-			if (whm == null)
+			if (whm == null || _rsrUsing)
 			{
-				return false;
+				return false; // RSR's own Use() (already validated) is never treated as a player input.
 			}
 
 			if (whm.ShouldBlockOpenerInput(actionType, actionId, targetObjectId, useType))
@@ -200,7 +204,17 @@ internal static class HimechanHooks
 			whm.StopOpener("실행 검사 오류로 종료");
 		}
 
-		var used = whm.UseWithOpenerScope(action);
+		bool used;
+		_rsrUsing = true;
+		try
+		{
+			used = whm.UseWithOpenerScope(action);
+		}
+		finally
+		{
+			_rsrUsing = false;
+		}
+
 		if (!used)
 		{
 			return false;

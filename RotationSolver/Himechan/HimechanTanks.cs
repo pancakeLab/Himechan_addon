@@ -1,4 +1,5 @@
 using Dalamud.Game.ClientState.Objects.SubKinds;
+using ECommons.DalamudServices;
 using ECommons.GameHelpers;
 
 namespace RotationSolver.Himechan;
@@ -15,7 +16,10 @@ internal static class HimechanTanks
 	/// <summary>Test mode is on and the player is alone, so it is actually in effect.</summary>
 	public static bool TestModeActive => HimechanSettings.Current.TestMode && IsSolo();
 
-	/// <summary>No other player character in the party (NPCs do not count).</summary>
+	/// <summary>
+	/// No other player character in the party list (Trust/Duty Support NPCs do not count). Uses the game's party list,
+	/// not DataCenter.PartyMembers, so a party member who is far away or not loaded still counts as "not solo".
+	/// </summary>
 	public static bool IsSolo()
 	{
 		var me = Player.Object;
@@ -24,9 +28,15 @@ internal static class HimechanTanks
 			return false;
 		}
 
-		foreach (var member in DataCenter.PartyMembers)
+		foreach (var member in Svc.Party)
 		{
-			if (member is IPlayerCharacter && member.GameObjectId != me.GameObjectId)
+			if (member == null || member.EntityId == me.EntityId)
+			{
+				continue;
+			}
+
+			// Not loaded (null) -> unknown -> treat as another player (conservative).
+			if (member.GameObject is not IBattleChara chara || chara is IPlayerCharacter)
 			{
 				return false;
 			}

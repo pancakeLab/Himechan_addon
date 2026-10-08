@@ -155,12 +155,14 @@ public sealed partial class WHM_Himechan
 		IBaseAction.ActionPreview = false;
 		try
 		{
-			if (action.CanUse(out next, usedUp: true, skipAoeCheck: true, skipTTKCheck: true, targetOverride: TargetType.Self))
+			// CanUse writes the action into its out parameter even on failure, so keep it in a local.
+			if (action.CanUse(out var act, usedUp: true, skipAoeCheck: true, skipTTKCheck: true, targetOverride: TargetType.Self))
 			{
-				if (target != null && next is IBaseAction chosen)
+				if (target != null && act is IBaseAction chosen)
 				{
 					chosen.Target = new TargetResult(target, [target], null);
 				}
+				next = act;
 				gcd = action;
 			}
 		}
@@ -375,7 +377,7 @@ public sealed partial class WHM_Himechan
 	/// whose id is in RSR's tankbuster list (HostileCastingTank) -> the boss's current target tank; (3) RSR's tankbuster VFX.
 	/// Test mode: the player counts as the tank.
 	/// </summary>
-	private bool TryHighEndAquaveil(out IAction? act)
+	private bool TryHighEndAquaveil(IAction nextGCD, out IAction? act)
 	{
 		act = null;
 		if (!AutoAquaveilHighEnd || !IsInHighEndDuty || !InCombat)
@@ -399,7 +401,9 @@ public sealed partial class WHM_Himechan
 			return LogAquaveilBlock("AQ BLOCK tank already has Aquaveil");
 		}
 
-		if (!MaintenanceWeaveSafe())
+		// Same rule as every other automatic ability (#11): with a planned GCD only inside the weave budget,
+		// without one (downtime) only casting / animation lock / game queue block it.
+		if (!AutoAbilityWeaveOk(nextGCD))
 		{
 			return LogAquaveilBlock("AQ BLOCK weave window");
 		}
