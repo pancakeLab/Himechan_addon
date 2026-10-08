@@ -189,8 +189,8 @@ internal abstract class Searchable(PropertyInfo property) : ISearchable
 	public JobFilter PvEFilter { get; set; }
 
 	public virtual string SearchingKeys => Name + " " + Description;
-	public virtual string Name => _ui?.Name ?? string.Empty;
-	public virtual string Description => string.IsNullOrEmpty(_ui?.Description) ? string.Empty : _ui.Description;
+	public virtual string Name => Himechan.HimechanLocalization.Translate(_ui?.Name ?? string.Empty); // HIMECHAN-HOOK: Translate
+	public virtual string Description => string.IsNullOrEmpty(_ui?.Description) ? string.Empty : Himechan.HimechanLocalization.Translate(_ui.Description); // HIMECHAN-HOOK: Translate
 
 	public virtual string Filter => _ui?.Filter ?? string.Empty;
 

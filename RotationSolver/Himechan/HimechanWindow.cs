@@ -61,6 +61,20 @@ internal sealed class HimechanWindow : Window
 		}
 
 		ImGui.Separator();
+		var translate = settings.TranslateRsrUi;
+		if (ImGui.Checkbox("RSR 설정 창을 한국어로 표시", ref translate))
+		{
+			settings.TranslateRsrUi = translate;
+			HimechanSettings.Save();
+		}
+		ImGui.TextWrapped($"RSR의 영어 문구를 사전({HimechanLocalization.DictionaryCount}개)으로 바꿔 보여 줍니다. 사전에 없는 새 문구는 영어 그대로 보입니다. 직접 고치려면 설정 폴더의 ko.override.json에 {{\"영어 원문\": \"한국어\"}} 형식으로 적으세요.");
+		if (ImGui.Button("사전 다시 읽기"))
+		{
+			HimechanLocalization.Reload();
+			HimechanProfile.Notify($"번역 사전을 다시 읽었습니다 ({HimechanLocalization.DictionaryCount}개).");
+		}
+
+		ImGui.Separator();
 		ImGui.TextUnformatted("디버그 · 테스트");
 
 		var debug = settings.DebugMode;

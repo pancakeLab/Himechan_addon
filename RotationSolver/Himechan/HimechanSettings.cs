@@ -18,6 +18,9 @@ internal sealed class HimechanSettings
 	/// <summary>Spec 3.11 / #27: write a combat log file per fight (Himechan/logs).</summary>
 	public bool DebugMode { get; set; } = false;
 
+	/// <summary>#29: show RSR's own settings window / messages in Korean (central dictionary, spec 3.12).</summary>
+	public bool TranslateRsrUi { get; set; } = true;
+
 	/// <summary>Spec 3.11 / #30: while solo, treat the player as the tank. Never saved, so it is always off after a restart.</summary>
 	[JsonIgnore]
 	public bool TestMode { get; set; } = false;
@@ -61,6 +64,7 @@ internal static class HimechanPaths
 	public static string ProfileFile => Path.Combine(Directory, "profile.json");
 	public static string BackupDirectory => Path.Combine(Directory, "backups");
 	public static string LogDirectory => Path.Combine(Directory, "logs");
+	public static string OverrideFile => Path.Combine(Directory, "ko.override.json");
 
 	/// <summary>Write to a temp file first and then replace, so a crash never leaves a half-written file.</summary>
 	public static void WriteAtomic(string path, string content)

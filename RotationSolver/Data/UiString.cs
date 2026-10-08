@@ -687,6 +687,7 @@ namespace RotationSolver.Data
 
 		public static string GetDescription<T>(this T value) where T : struct, Enum
 		{
+			if (Himechan.HimechanLocalization.TryTranslate(value, out var himechanText)) return himechanText; // HIMECHAN-HOOK: Translate
 			return DescriptionCache<T>.Get(value);
 		}
 
@@ -714,6 +715,7 @@ namespace RotationSolver.Data
 
 		public static string GetDescription(this Enum value)
 		{
+			if (Himechan.HimechanLocalization.TryTranslate(value, out var himechanText)) return himechanText; // HIMECHAN-HOOK: Translate
 			if (_enumDescriptions.TryGetValue(value, out var description))
 			{
 				return description;
