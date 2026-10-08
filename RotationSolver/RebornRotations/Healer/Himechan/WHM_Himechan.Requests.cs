@@ -13,8 +13,12 @@ public sealed partial class WHM_Himechan
 	[RotationConfig(CombatType.PvE, Name = "자동 능력 직후 수동 능력 입력 시 1GCD 뒤로 미루기 (거룩한 축복·구조 제외)")]
 	public bool DeferManualAbilityOnAutoWeave { get; set; } = false;
 
-	[RotationConfig(CombatType.PvE, Name = "고난도(영식) 탱커버스터에 물의 장막 자동 사용 (보스 시전 대상 탱커 또는 탱커버스터 VFX, 잔여 5초 이내)")]
+	// Setting key kept (AutoAquaveilHighEnd) so existing values carry over; it now applies to every duty.
+	[RotationConfig(CombatType.PvE, Name = "탱커버스터에 물의 장막 자동 사용 (적 시전 대상 탱커·탱커버스터 목록·VFX, 잔여 5초 이내. 이 외에는 자동 사용 안 함)")]
 	public bool AutoAquaveilHighEnd { get; set; } = true;
+
+	[RotationConfig(CombatType.PvE, Name = "고난도(영식·극·절)에서만 사용", Parent = nameof(AutoAquaveilHighEnd), ParentValue = true)]
+	public bool AquaveilHighEndOnly { get; set; } = false;
 
 	#region Solace request (/히메짱백합)
 	private bool _solaceRequest;
@@ -368,19 +372,19 @@ public sealed partial class WHM_Himechan
 	}
 	#endregion
 
-	#region High-end Aquaveil (#12)
+	#region Tankbuster Aquaveil (#12)
 	private double _aquaveilScanLogAt = double.MinValue;
 	private double _aquaveilBlockLogAt = double.MinValue;
 
 	/// <summary>
-	/// High-end duty, in combat: (1) an enemy cast aimed at a party tank with &lt;= 5s left; (2) a cast not aimed at a tank
-	/// whose id is in RSR's tankbuster list (HostileCastingTank) -> the boss's current target tank; (3) RSR's tankbuster VFX.
-	/// Test mode: the player counts as the tank.
+	/// In combat (any duty unless "high-end only"): (1) an enemy cast aimed at a party tank with &lt;= 5s left;
+	/// (2) a cast not aimed at a tank whose id is in RSR's tankbuster list (HostileCastingTank) -> the boss's current
+	/// target tank; (3) RSR's tankbuster VFX. This is the only automatic use of Aquaveil. Test mode: the player is the tank.
 	/// </summary>
-	private bool TryHighEndAquaveil(IAction nextGCD, out IAction? act)
+	private bool TryTankbusterAquaveil(IAction nextGCD, out IAction? act)
 	{
 		act = null;
-		if (!AutoAquaveilHighEnd || !IsInHighEndDuty || !InCombat)
+		if (!AutoAquaveilHighEnd || !InCombat || (AquaveilHighEndOnly && !IsInHighEndDuty))
 		{
 			return false;
 		}

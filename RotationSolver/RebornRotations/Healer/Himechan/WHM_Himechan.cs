@@ -152,7 +152,7 @@ public sealed partial class WHM_Himechan : WhiteMageRotation
 
 	private bool EmergencyAbilityCore(IAction nextGCD, out IAction? act)
 	{
-		if (TryHighEndAquaveil(nextGCD, out act))
+		if (TryTankbusterAquaveil(nextGCD, out act))
 		{
 			return true;
 		}
@@ -243,19 +243,13 @@ public sealed partial class WHM_Himechan : WhiteMageRotation
 		return base.DefenseAreaAbility(nextGCD, out act);
 	}
 
-	[RotationDesc(ActionID.AquaveilPvE)]
-	protected override bool DefenseSingleAbility(IAction nextGCD, out IAction? act) =>
-		WeaveGate(nextGCD, DefenseSingleAbilityCore, out act);
-
-	private bool DefenseSingleAbilityCore(IAction nextGCD, out IAction? act)
+	protected override bool DefenseSingleAbility(IAction nextGCD, out IAction? act)
 	{
-		// Aquaveil follows RSR's standard single-target defense dispatch and targeting.
-		// Keep Himechan's Divine Benison policy exclusively in GeneralAbility.
-		if (AquaveilPvE.CanUse(out act))
-		{
-			return true;
-		}
-		return base.DefenseSingleAbility(nextGCD, out act);
+		// Aquaveil is used only by Himechan's tankbuster logic (TryTankbusterAquaveil in EmergencyAbility),
+		// never by RSR's generic single-target defense trigger (user request 2026-10-08: no "on cooldown" use).
+		// Divine Benison keeps its own policy in GeneralAbility.
+		act = null;
+		return false;
 	}
 
 	[RotationDesc(ActionID.AsylumPvE)]
