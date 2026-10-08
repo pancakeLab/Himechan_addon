@@ -1,0 +1,118 @@
+# HIMECHAN: build a fork release from the himechan branch, publish latest.zip as a GitHub Release
+# and update pluginmaster.json on the himechan branch.
+# Version rule (spec 2.4): upstream a.b.c.d -> fork a.b.c.(d*100+n). Tags/commits are made with
+# GITHUB_TOKEN, so upstream publish.yaml and himechan-build.yaml are NOT triggered by them.
+name: Himechan Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: '미리보기만: 빌드하고 pluginmaster.json을 출력하되 릴리스·푸시는 하지 않음'
+        type: boolean
+        default: false
+      notes:
+        description: '릴리스 노트에 넣을 한 줄 (선택)'
+        type: string
+        default: ''
+  workflow_call:
+    inputs:
+      dry_run:
+        type: boolean
+        default: false
+      notes:
+        type: string
+        default: ''
+
+permissions:
+  contents: write
+
+concurrency:
+  group: himechan-release
+  cancel-in-progress: false
+
+jobs:
+  Release:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout himechan
+        uses: actions/checkout@v6
+        with:
+          ref: himechan
+          fetch-depth: 0
+
+      - name: Fetch upstream tags
+        shell: pwsh
+        run: |
+          git remote add upstream https://github.com/FFXIV-CombatReborn/RotationSolverReborn.git
+          git fetch --no-tags upstream '+refs/heads/main:refs/remotes/upstream/main' '+refs/tags/*:refs/upstream-tags/*'
+
+      - name: Compute fork version
+        id: ver
+        shell: pwsh
+        run: ./.github/himechan/fork-version.ps1
+
+      - name: Build
+        id: build
+        uses: ./.github/himechan/build
+        with:
+          version: ${{ steps.ver.outputs.version }}
+          informational_version: ${{ steps.ver.outputs.info_version }}
+
+      - name: Make pluginmaster.json and release notes
+        id: meta
+        shell: pwsh
+        env:
+          NOTES: ${{ inputs.notes }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $version = "${{ steps.ver.outputs.version }}"
+          $base = "${{ steps.ver.outputs.base_tag }}"
+          $sha = "${{ steps.ver.outputs.himechan_sha }}"
+          $repo = "${{ github.repository }}"
+          $lines = @(
+            "히메짱 WHM 포크 $version",
+            "",
+            "- 원본 RSR: $base (https://github.com/FFXIV-CombatReborn/RotationSolverReborn/releases/tag/$base)",
+            "- 포크 커밋: $sha",
+            "- latest.zip SHA256: ${{ steps.build.outputs.zip_sha256 }}"
+          )
+          if ($env:NOTES) { $lines += ""; $lines += $env:NOTES }
+          $notes = $lines -join "`n"
+          [IO.File]::WriteAllText("release-notes.md", $notes + "`n", [Text.UTF8Encoding]::new($false))
+          ./.github/himechan/make-pluginmaster.ps1 -ManifestPath build/RotationSolver/RotationSolver.json -Version $version -BaseTag $base -Repo $repo -OutPath pluginmaster.json -Changelog $notes
+          "----- pluginmaster.json -----"; Get-Content pluginmaster.json
+          $private = gh api "repos/$repo" -q .private
+          if ($private -eq 'true') { Write-Warning "저장소가 비공개입니다. 공개로 전환해야 Dalamud가 pluginmaster.json과 latest.zip을 받을 수 있습니다." }
+
+      - name: Dry run - stop here
+        if: ${{ inputs.dry_run }}
+        shell: pwsh
+        run: |
+          "DRY RUN: would create release ${{ steps.ver.outputs.version }} on $(git rev-parse HEAD) and push pluginmaster.json"
+          "::notice::dry run complete - ${{ steps.ver.outputs.version }} (upstream ${{ steps.ver.outputs.base_tag }})"
+
+      - name: Create GitHub Release
+        if: ${{ !inputs.dry_run }}
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: ${{ steps.ver.outputs.version }}
+          target_commitish: ${{ github.sha }}
+          name: 히메짱 WHM ${{ steps.ver.outputs.version }}
+          body_path: release-notes.md
+          files: ./build/RotationSolver/latest.zip
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fail_on_unmatched_files: true
+
+      - name: Commit pluginmaster.json
+        if: ${{ !inputs.dry_run }}
+        shell: pwsh
+        run: |
+          git config user.name "himechan-release[bot]"
+          git config user.email "himechan-release[bot]@users.noreply.github.com"
+          git add pluginmaster.json
+          if ((git status --porcelain pluginmaster.json) -eq $null) { "pluginmaster.json unchanged"; exit 0 }
+          git commit -m "HIMECHAN: pluginmaster.json ${{ steps.ver.outputs.version }} (upstream ${{ steps.ver.outputs.base_tag }}) [skip ci]"
+          git pull --rebase origin himechan
+          git push origin HEAD:himechan
+          "::notice::released ${{ steps.ver.outputs.version }}"

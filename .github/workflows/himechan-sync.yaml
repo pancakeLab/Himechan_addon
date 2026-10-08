@@ -1,0 +1,187 @@
+# HIMECHAN: automatic upstream sync (spec 2.3).
+# Every 6 hours: newest upstream release tag -> KR Dalamud API gate -> mirror `main` -> merge into `himechan`
+# -> build -> push -> release (himechan-release.yaml). Merge conflicts, build failures and an API level the
+# KR client does not have yet create a GitHub issue (label himechan-sync) and stop; nothing is pushed then.
+name: Himechan Sync
+
+on:
+  schedule:
+    - cron: '17 */6 * * *'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: '미리보기만: 병합·빌드까지 하고 푸시·릴리스·이슈는 만들지 않음'
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+  issues: write
+
+concurrency:
+  group: himechan-sync
+  cancel-in-progress: false
+
+jobs:
+  Sync:
+    runs-on: windows-latest
+    outputs:
+      merged: ${{ steps.merge.outputs.merged }}
+      tag: ${{ steps.upstream.outputs.latest }}
+    env:
+      GH_TOKEN: ${{ github.token }}
+      UPSTREAM: FFXIV-CombatReborn/RotationSolverReborn
+      DRY_RUN: ${{ inputs.dry_run == true }}
+    steps:
+      - name: Checkout himechan
+        uses: actions/checkout@v6
+        with:
+          ref: himechan
+          fetch-depth: 0
+
+      - name: Git identity
+        shell: pwsh
+        run: |
+          git config user.name "himechan-sync[bot]"
+          git config user.email "himechan-sync[bot]@users.noreply.github.com"
+
+      - name: Find newest upstream release tag
+        id: upstream
+        shell: pwsh
+        run: |
+          git remote add upstream "https://github.com/$env:UPSTREAM.git"
+          git fetch --no-tags upstream '+refs/heads/main:refs/remotes/upstream/main' '+refs/tags/*:refs/upstream-tags/*'
+          $latest = git for-each-ref --format '%(refname:strip=2)' refs/upstream-tags |
+            Where-Object { $_ -match '^\d+\.\d+\.\d+\.\d+$' } | Sort-Object { [version]$_ } -Descending | Select-Object -First 1
+          if (-not $latest) { throw "no upstream tags found" }
+          $latestCommit = (git rev-parse "refs/upstream-tags/$latest^{commit}").Trim()
+          $mergeBase = (git merge-base HEAD upstream/main).Trim()
+          $current = git for-each-ref --points-at $mergeBase --format '%(refname:strip=2)' refs/upstream-tags |
+            Where-Object { $_ -match '^\d+\.\d+\.\d+\.\d+$' } | Sort-Object { [version]$_ } -Descending | Select-Object -First 1
+          git merge-base --is-ancestor $latestCommit HEAD
+          $already = ($LASTEXITCODE -eq 0)
+          "newest upstream tag : $latest ($latestCommit)"
+          "current base        : $current ($mergeBase)"
+          "already merged      : $already"
+          "latest=$latest" | Out-File -Append -FilePath $env:GITHUB_OUTPUT
+          "latest_commit=$latestCommit" | Out-File -Append -FilePath $env:GITHUB_OUTPUT
+          "current=$current" | Out-File -Append -FilePath $env:GITHUB_OUTPUT
+          "needed=$(-not $already)" | Out-File -Append -FilePath $env:GITHUB_OUTPUT
+
+      - name: KR Dalamud API gate
+        id: gate
+        if: steps.upstream.outputs.needed == 'True'
+        shell: pwsh
+        run: |
+          $latest = "${{ steps.upstream.outputs.latest }}"
+          $manifest = git show "refs/upstream-tags/${latest}:RotationSolver/RotationSolver.json" | ConvertFrom-Json
+          $api = [int]$manifest.DalamudApiLevel
+          $csproj = git show "refs/upstream-tags/${latest}:RotationSolver/RotationSolver.csproj"
+          $sdk = if ($csproj -match 'Dalamud\.NET\.Sdk/([\d\.]+)') { $Matches[1] } else { '?' }
+          $limit = [int](Get-Content .github/himechan/kr-dalamud-api-level.txt -TotalCount 1).Trim()
+          "upstream $latest : DalamudApiLevel=$api, Dalamud.NET.Sdk=$sdk ; KR limit = $limit"
+          "api=$api" | Out-File -Append -FilePath $env:GITHUB_OUTPUT
+          "sdk=$sdk" | Out-File -Append -FilePath $env:GITHUB_OUTPUT
+          "limit=$limit" | Out-File -Append -FilePath $env:GITHUB_OUTPUT
+          "blocked=$($api -gt $limit)" | Out-File -Append -FilePath $env:GITHUB_OUTPUT
+
+      - name: Issue - waiting for KR Dalamud
+        if: steps.upstream.outputs.needed == 'True' && steps.gate.outputs.blocked == 'True' && env.DRY_RUN != 'true'
+        shell: pwsh
+        run: |
+          $latest = "${{ steps.upstream.outputs.latest }}"
+          $title = "[sync] 한섭 Dalamud 대기: 원본 $latest 는 API ${{ steps.gate.outputs.api }} (한섭 상한 ${{ steps.gate.outputs.limit }})"
+          ./.github/himechan/sync-issue.ps1 -Title $title -Body @"
+원본 RSR **$latest** 가 Dalamud API 레벨 **${{ steps.gate.outputs.api }}** (SDK ${{ steps.gate.outputs.sdk }})로 올라갔습니다.
+``.github/himechan/kr-dalamud-api-level.txt`` 의 한섭 상한은 **${{ steps.gate.outputs.limit }}** 이라 병합·배포를 멈췄습니다.
+
+한섭 Dalamud(XIVLauncherKR)가 이 API 레벨로 올라온 것을 확인한 뒤, 그 파일의 숫자를 올려 커밋하면 다음 동기화에서 자동으로 병합·배포됩니다.
+실행: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+"@
+          "::warning::KR API gate: upstream $latest needs API ${{ steps.gate.outputs.api }} > KR limit ${{ steps.gate.outputs.limit }}; not merged"
+
+      - name: Merge upstream into himechan
+        id: merge
+        if: steps.upstream.outputs.needed == 'True' && steps.gate.outputs.blocked != 'True'
+        shell: pwsh
+        run: |
+          $latest = "${{ steps.upstream.outputs.latest }}"
+          $commit = "${{ steps.upstream.outputs.latest_commit }}"
+          git merge --no-ff --no-edit -m "HIMECHAN: merge upstream $latest" $commit
+          if ($LASTEXITCODE -ne 0) {
+            $conflicts = (git diff --name-only --diff-filter=U) -join "`n"
+            git merge --abort
+            "conflicts=$($conflicts -replace "`n", ', ')" | Out-File -Append -FilePath $env:GITHUB_OUTPUT
+            "merged=false" | Out-File -Append -FilePath $env:GITHUB_OUTPUT
+            "::error::merge conflict with upstream $latest`n$conflicts"
+            exit 2
+          }
+          "merged=true" | Out-File -Append -FilePath $env:GITHUB_OUTPUT
+
+      - name: Issue - merge conflict
+        if: failure() && steps.merge.outcome == 'failure' && env.DRY_RUN != 'true'
+        shell: pwsh
+        run: |
+          $latest = "${{ steps.upstream.outputs.latest }}"
+          ./.github/himechan/sync-issue.ps1 -Title "[sync] 병합 충돌: 원본 $latest" -Body @"
+원본 RSR **$latest** 를 ``himechan`` 에 병합하다 충돌이 났습니다. 아무것도 푸시하지 않았습니다.
+
+충돌 파일:
+``````
+${{ steps.merge.outputs.conflicts }}
+``````
+
+로컬에서 ``git fetch upstream --tags`` 후 ``git merge $latest`` 로 충돌을 풀고(``HIMECHAN-HOOK`` 주석 위치 확인), 빌드가 되면 ``himechan`` 에 푸시하세요. 그 뒤 ``Himechan Sync`` 를 수동 실행하면 릴리스까지 이어집니다.
+실행: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+"@
+
+      - name: Build merged tree
+        id: build
+        if: steps.merge.outputs.merged == 'true'
+        uses: ./.github/himechan/build
+
+      - name: Issue - build failed
+        if: failure() && steps.build.outcome == 'failure' && env.DRY_RUN != 'true'
+        shell: pwsh
+        run: |
+          $latest = "${{ steps.upstream.outputs.latest }}"
+          ./.github/himechan/sync-issue.ps1 -Title "[sync] 빌드 실패: 원본 $latest 병합본" -Body @"
+원본 RSR **$latest** 를 병합한 결과가 빌드되지 않았습니다(원본 API 변경 가능성). 아무것도 푸시하지 않았습니다.
+
+빌드 로그: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
+로컬에서 병합 후 컴파일 오류를 고쳐 ``himechan`` 에 푸시하면 다음 동기화에서 릴리스됩니다.
+"@
+
+      - name: Push main mirror and himechan
+        if: steps.merge.outputs.merged == 'true' && env.DRY_RUN != 'true'
+        shell: pwsh
+        run: |
+          $commit = "${{ steps.upstream.outputs.latest_commit }}"
+          git push origin "${commit}:refs/heads/main"
+          git push origin HEAD:himechan
+          "::notice::merged upstream ${{ steps.upstream.outputs.latest }} into himechan; main mirrored"
+
+      - name: Close resolved sync issues
+        if: steps.merge.outputs.merged == 'true' && env.DRY_RUN != 'true'
+        shell: pwsh
+        run: |
+          $open = gh issue list --label himechan-sync --state open --json number,title | ConvertFrom-Json
+          foreach ($i in $open) {
+            gh issue close $i.number --comment "원본 ${{ steps.upstream.outputs.latest }} 동기화가 성공해 자동으로 닫습니다. (실행 ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})"
+          }
+
+      - name: Nothing to do
+        if: steps.upstream.outputs.needed != 'True'
+        shell: pwsh
+        run: '"himechan already contains upstream ${{ steps.upstream.outputs.latest }} - nothing to do"'
+
+  Release:
+    needs: Sync
+    if: needs.Sync.outputs.merged == 'true' && inputs.dry_run != true
+    permissions:
+      contents: write
+    uses: ./.github/workflows/himechan-release.yaml
+    with:
+      dry_run: false
+      notes: '원본 RSR ${{ needs.Sync.outputs.tag }} 자동 병합'

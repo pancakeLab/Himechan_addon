@@ -36,10 +36,21 @@ under the same terms. The upstream README is kept unchanged at [`/README.md`](..
   updates merge cleanly. Himechan workflows are `.github/workflows/himechan-*.yaml`.
 - Versioning: upstream `a.b.c.d` → fork `a.b.c.(d×100 + n)` (upstream 7.5.6.19 → 7.5.6.1900).
 
-## Install (once releases are published)
+## Install
 This fork is a complete build of RSR with the Himechan rotation included. It **replaces** the
 official plugin; it is not an add-on.
 - Both use the same internal name `RotationSolver`, so **uninstall the official RSR first** and
-  register only this fork's repo URL (to be added here). Do not keep both repo URLs registered.
+  register only this fork's repo URL. Do not keep both repo URLs registered.
+- Dalamud custom repo URL:
+  `https://raw.githubusercontent.com/pancakeLab/Himechan_addon/himechan/pluginmaster.json`
 - Existing settings in `pluginConfigs/RotationSolver` are kept.
-- Upstream RSR updates are merged into this fork automatically, so you still receive them.
+- Upstream RSR updates are merged into this fork automatically (`Himechan Sync`, every 6 hours),
+  so you still receive them. Fork versions are `a.b.c.(d*100+n)` of upstream `a.b.c.d`.
+
+## 설치 (한국어)
+- 공식 RSR과 내부 이름이 같아 **동시에 설치할 수 없습니다.** 공식 RSR을 제거한 뒤 아래 주소를
+  Dalamud 설정 → 실험적 기능 → 사용자 지정 플러그인 저장소에 등록하세요.
+  `https://raw.githubusercontent.com/pancakeLab/Himechan_addon/himechan/pluginmaster.json`
+- 기존 RSR 설정은 그대로 유지됩니다. 게임 안에서 `/히메짱` 으로 설정 창을 엽니다.
+- 원본 RSR 업데이트는 6시간마다 자동으로 병합·배포됩니다. 한섭 Dalamud가 아직 지원하지 않는
+  API 레벨로 원본이 올라가면 자동 배포를 멈추고 이슈로 알립니다.
