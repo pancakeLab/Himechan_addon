@@ -31,11 +31,49 @@ internal static class HimechanLocalization
 		EnsureLoaded();
 		if (_override.TryGetValue(text, out var ko) || HimechanKoreanStrings.Map.TryGetValue(text, out ko))
 		{
-			return ko;
+			return ko.IndexOf('{') < 0 ? ko : ResolveGameNames(ko);
 		}
 
 		return text;
 	}
+
+	#region Game-data placeholders
+	// Dictionary values may contain {a:ID} Action, {s:ID} Status, {i:ID} Item, {c:ID} ContentFinderCondition,
+	// {n:ID} BNpcName (enemy) or {t:ID} ContentType. They are replaced with the name from the client's own game data,
+	// i.e. the official localized name (Korean on the KR client, English on the global client). Unknown ids leave
+	// the placeholder as is. Ids were taken from xivapi/ffxiv-datamining (en) and Ra-Workspace/ffxiv-datamining-ko.
+	private static readonly System.Text.RegularExpressions.Regex _placeholder = new(@"\{([asicnt]):(\d+)\}", System.Text.RegularExpressions.RegexOptions.Compiled);
+	private static readonly ConcurrentDictionary<string, string> _resolved = new(StringComparer.Ordinal);
+
+	private static string ResolveGameNames(string text) =>
+		_resolved.GetOrAdd(text, static t => _placeholder.Replace(t, m => GameName(m.Groups[1].Value[0], uint.Parse(m.Groups[2].Value)) ?? m.Value));
+
+	private static string? GameName(char kind, uint id)
+	{
+		try
+		{
+			string? name = kind switch
+			{
+				'a' => Service.GetSheet<Lumina.Excel.Sheets.Action>().GetRowOrDefault(id)?.Name.ExtractText(),
+				's' => Service.GetSheet<Lumina.Excel.Sheets.Status>().GetRowOrDefault(id)?.Name.ExtractText(),
+				'i' => Service.GetSheet<Lumina.Excel.Sheets.Item>().GetRowOrDefault(id)?.Name.ExtractText(),
+				'c' => Service.GetSheet<Lumina.Excel.Sheets.ContentFinderCondition>().GetRowOrDefault(id)?.Name.ExtractText(),
+				'n' => Service.GetSheet<Lumina.Excel.Sheets.BNpcName>().GetRowOrDefault(id)?.Singular.ExtractText(),
+				't' => Service.GetSheet<Lumina.Excel.Sheets.ContentType>().GetRowOrDefault(id)?.Name.ExtractText(),
+				_ => null,
+			};
+			return string.IsNullOrWhiteSpace(name) ? null : name;
+		}
+		catch (Exception ex)
+		{
+			PluginLog.Warning($"[Himechan] Game name lookup failed ({kind}:{id}): {ex.Message}");
+			return null;
+		}
+	}
+
+	/// <summary>Clears resolved names (after a dictionary reload).</summary>
+	private static void ClearResolved() => _resolved.Clear();
+	#endregion
 
 	/// <summary>
 	/// Korean text for an enum value's [Description]. Reflection is cached per (type, name); the result respects
@@ -79,6 +117,7 @@ internal static class HimechanLocalization
 	public static void Reload()
 	{
 		_override.Clear();
+		ClearResolved();
 		_loaded = true;
 		try
 		{

@@ -1,6 +1,17 @@
 namespace RotationSolver.Himechan;
 
-/// <summary>Korean dictionary part 2: setting names and descriptions ([UI(...)] in Configuration/Configs.cs).</summary>
+/// <summary>
+/// Korean dictionary part 2: setting names and descriptions ([UI(...)] in Configuration/Configs.cs).
+/// Game names use runtime placeholders (see part 1). Ids verified against xivapi/ffxiv-datamining (en) and
+/// Ra-Workspace/ffxiv-datamining-ko (ko): actions 3 Sprint, 125 Raise, 3613 Collective Unconscious,
+/// 7385 Passage of Arms, 7533 Provoke, 7537 Shirk, 7546 True North, 7548 Arm's Length, 7559 Surecast,
+/// 7561 Swiftcast, 7562 Lucid Dreaming, 23288 Phantom Flurry, 29054 Guard (PvP), 29056 Purify (PvP);
+/// statuses 2 Stun, 7 Silence, 13 Bind, 14 Heavy, 44 Brink of Death, 386 Unfooled, 398 Astral Realignment,
+/// 487 Deep Freeze, 719 Whaleback, 1249 Dualcast, 1660/1661 Packet Filter M/F, 3054 Guard, 3085 Miracle of Nature,
+/// 4559/4560 Dark/Light Vengeance, 4974/4975 Firesnaking/Watersnaking, 5376 Perfect Defense; item 4570 Phoenix Down;
+/// duties (ContentFinderCondition) 89, 92, 120, 611, 649, 694, 718, 736, 779, 868, 908, 1006, 1010, 1015, 1028,
+/// 1094, 1116, 1117; enemies (BNpcName) listed inline; content type 27 Masked Carnivale, 38 Occult Crescent.
+/// </summary>
 internal static partial class HimechanKoreanStrings
 {
 	private static void AddConfigNames()
@@ -11,46 +22,46 @@ internal static partial class HimechanKoreanStrings
 		Add("Prevent specific Paralysis actions from being used against mobs that are immune to those effects.", "마비 기술을 해당 효과에 면역인 몬스터에게 쓰지 않음");
 		Add("Prevent specific Interrupt actions from being used against mobs that are immune to those effects.", "시전 방해 기술을 해당 효과에 면역인 몬스터에게 쓰지 않음");
 		Add("Prevent specific Blind actions from being used against mobs that are immune to those effects.", "실명 기술을 해당 효과에 면역인 몬스터에게 쓰지 않음");
-		Add("Prevent specific Stun actions from being used against mobs that are immune to those effects.", "기절 기술을 해당 효과에 면역인 몬스터에게 쓰지 않음");
+		Add("Prevent specific Stun actions from being used against mobs that are immune to those effects.", "{s:2} 기술을 해당 효과에 면역인 몬스터에게 쓰지 않음");
 		Add("Prevent specific Sleep actions from being used against mobs that are immune to those effects.", "수면 기술을 해당 효과에 면역인 몬스터에게 쓰지 않음");
-		Add("Prevent specific Bind actions from being used against mobs that are immune to those effects.", "속박 기술을 해당 효과에 면역인 몬스터에게 쓰지 않음");
-		Add("Prevent specific Heavy actions from being used against mobs that are immune to those effects.", "과중 기술을 해당 효과에 면역인 몬스터에게 쓰지 않음");
+		Add("Prevent specific Bind actions from being used against mobs that are immune to those effects.", "{s:13} 기술을 해당 효과에 면역인 몬스터에게 쓰지 않음");
+		Add("Prevent specific Heavy actions from being used against mobs that are immune to those effects.", "{s:14} 기술을 해당 효과에 면역인 몬스터에게 쓰지 않음");
 		Add("Prevent specific aspected actions from being used against mobs that are immune to that aspect.", "속성 기술을 그 속성에 면역인 몬스터에게 쓰지 않음");
 		Add("If a mob is weak to a specific aspect, only use actions of that aspect.", "몬스터가 특정 속성에 약하면 그 속성 기술만 사용");
 		Add("Still allow unaspected actions.", "무속성 기술은 계속 허용");
-		Add("O12S - Packet Filter logic.", "O12S - 패킷 필터 로직");
-		Add("M8S - Wolf Pack/Stone Pack logic.", "M8S - 바람 늑대/돌 늑대 로직");
+		Add("O12S - Packet Filter logic.", "O12S - {s:1660}/{s:1661} 로직");
+		Add("M8S - Wolf Pack/Stone Pack logic.", "M8S - {n:13846}/{n:13847} 로직");
 		Add("M9S - Only use cleave logic.", "M9S - 단일 광역(클리브)만 사용 로직");
 		Add("M9S - Cell Targeting logic.", "M9S - 세포 대상 로직");
 		Add("M9S - Ads Targeting logic.", "M9S - 쫄 대상 로직");
-		Add("M10S - Firesnaking/Watersnaking targeting logic.", "M10S - 불뱀/물뱀 대상 로직");
-		Add("Limitless Blue Extreme - Whaleback logic.", "극 비스마르크 - 고래등 로직");
-		Add("Cinder Drift Extreme - Pall Targeting logic.", "극 루비 웨폰 - 장막 대상 로직");
-		Add("The Unmaking Extreme - Shadow logic.", "극 언메이킹 - 그림자 로직");
-		Add("The Epic of Alexander (Ultimate) - Jagd Doll logic.", "절 알렉산더 - 야크트 돌 로직");
-		Add("The Epic of Alexander (Ultimate) - True Heart logic.", "절 알렉산더 - 진심 로직");
-		Add("The Omega Protocol (Ultimate) - Packet Filter logic.", "절 오메가 - 패킷 필터 로직");
-		Add("Futures Rewritten (Ultimate) - Crystal Of Darkness logic.", "절 에덴 - 어둠의 크리스탈 로직");
-		Add("Dancing Mad (Ultimate) - Hero/Villain logic.", "절 Dancing Mad - 영웅/악당 로직");
-		Add("The Ghimlyt Dark - Colossus Rubricatus ad.", "김리트 황야 - 콜로서스 루브리카투스 쫄");
-		Add("Dohn Mheg - Liars Lyre mechancic.", "돈 메그 - 거짓말쟁이의 수금 기믹");
-		Add("The Meso Terminal - Thanatos logic.", "메소 터미널 - 타나토스 로직");
-		Add("Forked Tower Blood - Dead Star logic.", "갈림탑 혈 - 죽은 별 로직");
-		Add("Forked Tower Magic - First Boss Villian/Hero.", "갈림탑 마 - 1보스 악당/영웅");
-		Add("North Horn CE - Tiny Mage targetting logic.", "North Horn CE - 꼬마 마도사 대상 로직");
+		Add("M10S - Firesnaking/Watersnaking targeting logic.", "M10S - {s:4974}/{s:4975} 대상 로직");
+		Add("Limitless Blue Extreme - Whaleback logic.", "{c:89} - {s:719} 로직");
+		Add("Cinder Drift Extreme - Pall Targeting logic.", "{c:718} - 장막(Pall) 대상 로직");
+		Add("The Unmaking Extreme - Shadow logic.", "{c:1116} - 그림자 로직");
+		Add("The Epic of Alexander (Ultimate) - Jagd Doll logic.", "{c:694} - {n:3759} 로직");
+		Add("The Epic of Alexander (Ultimate) - True Heart logic.", "{c:694} - {n:4694} 로직");
+		Add("The Omega Protocol (Ultimate) - Packet Filter logic.", "{c:908} - {s:1660}/{s:1661} 로직");
+		Add("Futures Rewritten (Ultimate) - Crystal Of Darkness logic.", "{c:1006} - {n:13556} 로직");
+		Add("Dancing Mad (Ultimate) - Hero/Villain logic.", "{c:1094} - 영웅/악당 로직");
+		Add("The Ghimlyt Dark - Colossus Rubricatus ad.", "{c:611} - 콜로서스 루브리카투스 쫄");
+		Add("Dohn Mheg - Liars Lyre mechancic.", "{c:649} - {n:8958} 기믹");
+		Add("The Meso Terminal - Thanatos logic.", "{c:1028} - {n:710} 로직");
+		Add("Forked Tower Blood - Dead Star logic.", "포크 타워: 피의 탑 - 죽은 별 로직");
+		Add("Forked Tower Magic - First Boss Villian/Hero.", "포크 타워: 마의 탑 - 1보스 악당/영웅");
+		Add("North Horn CE - Tiny Mage targetting logic.", "{t:38} 북부편 CE - 꼬마 마도사 대상 로직");
 		Add("Elemental Weakness Tracking.", "속성 약점 추적");
-		Add("Pilgrim's Traverse - Eminent Grief logic.", "순례자의 길 - 비탄 로직");
-		Add("The Labyrinth of the Ancients - Thanatos logic.", "고대의 미궁 - 타나토스 로직");
-		Add("The Void Ark - Irminsul and Sawtooth logic.", "보이드 방주 - 이르민술과 톱니 로직");
-		Add("The Puppets' Bunker - Superior Flight Unit logic.", "인형들의 벙커 - 상위 비행 유닛 로직");
-		Add("The Tower at Paradigm's Breach - Hansel and Gretel logic.", "패러다임 돌파탑 - 헨젤과 그레텔 로직");
-		Add("Jeuno: The First Walk - The Ark Angels logic.", "주노: 첫 번째 행보 - 방주의 천사 로직");
-		Add("Windurst: The Third Walk - Alexander Resurrected logic.", "윈더스트: 세 번째 행보 - 부활한 알렉산더 로직");
-		Add("Cloud of Darkness - Ads phase logic.", "어둠의 구름 - 쫄 페이즈 로직");
-		Add("The Sil'dihn Subterrane - Drakefamily ads logic.", "실디하 지하 - 드레이크 일족 쫄 로직");
+		Add("Pilgrim's Traverse - Eminent Grief logic.", "노르브란트 순례길 - {n:14037} 로직");
+		Add("The Labyrinth of the Ancients - Thanatos logic.", "{c:92} - {n:710} 로직");
+		Add("The Void Ark - Irminsul and Sawtooth logic.", "{c:120} - {n:4623}·{n:4624} 로직");
+		Add("The Puppets' Bunker - Superior Flight Unit logic.", "{c:736} - 상위 비행 유닛 로직");
+		Add("The Tower at Paradigm's Breach - Hansel and Gretel logic.", "{c:779} - {n:9988}·{n:9989} 로직");
+		Add("Jeuno: The First Walk - The Ark Angels logic.", "{c:1015} - 아크 엔젤 로직");
+		Add("Windurst: The Third Walk - Alexander Resurrected logic.", "{c:1117} - 부활한 {n:5174} 로직");
+		Add("Cloud of Darkness - Ads phase logic.", "{c:1010} - 쫄 페이즈 로직");
+		Add("The Sil'dihn Subterrane - Drakefamily ads logic.", "{c:868} - 드레이크 일족 쫄 로직");
 		Add("Treasure Dungeons - Timed mob logic.", "보물 던전 - 시간제한 몬스터 로직");
 		Add("Treasure Dungeons - Numbered mob logic.", "보물 던전 - 번호 몬스터 로직");
-		Add("The HP for using Guard.", "가드를 쓸 HP");
+		Add("The HP for using Guard.", "{a:29054} 사용 HP");
 		Add("Ignore TTK for PvP purposes.", "PvP에서는 예상 처치 시간(TTK) 무시");
 		Add("Prioritize A tier tomeliths in Shatter.", "쉐터에서 A급 토멜리스 우선");
 		Add("Prioritize B tier tomeliths in Shatter.", "쉐터에서 B급 토멜리스 우선");
@@ -59,16 +70,16 @@ internal static partial class HimechanKoreanStrings
 		Add("Auto turn off when PvP match ends.", "PvP 경기가 끝나면 자동으로 끄기");
 		Add("Auto turn on when PvP match starts.", "PvP 경기가 시작되면 자동으로 켜기");
 		Add("Set RSR to PvP specific state when enabled in PvP zone.", "PvP 지역에서 켜면 RSR을 PvP 전용 상태로 설정");
-		Add("Don't use any actions while in Guard.", "가드 중에는 어떤 기술도 쓰지 않음");
-		Add("Cancel cast in PvP if the target gains Guard and the action does not ignore Guard.", "PvP에서 대상이 가드를 켜고 기술이 가드를 무시하지 않으면 시전 취소");
-		Add("Use Purify to remove Stun debuff", "기절 디버프를 정화로 해제");
-		Add("Use Purify to remove Silence debuff", "침묵 디버프를 정화로 해제");
-		Add("Use Purify to remove Deep Freeze debuff", "빙결 디버프를 정화로 해제");
-		Add("Use Purify to remove Miracle of Nature debuff", "자연의 기적 디버프를 정화로 해제");
-		Add("Use Purify to remove Heavy debuff", "과중 디버프를 정화로 해제");
-		Add("Use Purify to remove Bind debuff", "속박 디버프를 정화로 해제");
+		Add("Don't use any actions while in Guard.", "{a:29054} 중에는 기술을 쓰지 않음");
+		Add("Cancel cast in PvP if the target gains Guard and the action does not ignore Guard.", "PvP에서 대상이 {s:3054} 상태가 되고 기술이 이를 무시하지 않으면 시전 취소");
+		Add("Use Purify to remove Stun debuff", "{s:2} 디버프에 {a:29056} 사용");
+		Add("Use Purify to remove Silence debuff", "{s:7} 디버프에 {a:29056} 사용");
+		Add("Use Purify to remove Deep Freeze debuff", "{s:487} 디버프에 {a:29056} 사용");
+		Add("Use Purify to remove Miracle of Nature debuff", "{s:3085} 디버프에 {a:29056} 사용");
+		Add("Use Purify to remove Heavy debuff", "{s:14} 디버프에 {a:29056} 사용");
+		Add("Use Purify to remove Bind debuff", "{s:13} 디버프에 {a:29056} 사용");
 		Add("Lock out GCD cycle if you are below 50% HP and have over 2000 MP for heals (Experimental).", "HP 50% 미만이고 MP가 2000 이상이면 회복을 위해 GCD 순환 잠금(실험적)");
-		Add("Allow Sprint when no target is set even if youre in range of hostiles (Experimental).", "대상이 없으면 적 사거리 안에서도 전력 질주 허용(실험적)");
+		Add("Allow Sprint when no target is set even if youre in range of hostiles (Experimental).", "대상이 없으면 적 사거리 안에서도 {a:3} 허용(실험적)");
 		Add("Use BMR intergration to verify safety of movement actions/actions that cause movement for automatic usage. (Experimental)", "자동 사용 시 이동 기술·이동이 생기는 기술의 안전을 BMR 연동으로 확인(실험적)");
 		Add("Use BMR intergration to verify safety of movement actions/actions that cause movement for intercepted usage. (Experimental)", "가로챈 입력의 이동 기술·이동이 생기는 기술의 안전을 BMR 연동으로 확인(실험적)");
 		Add("Intercept player input and queue it for RSR to execute the action. (PvE only)", "플레이어 입력을 가로채 RSR이 대신 실행하도록 대기열에 넣음(PvE 전용)");
@@ -95,17 +106,17 @@ internal static partial class HimechanKoreanStrings
 		Add("Display plugin status in toast popup", "플러그인 상태를 알림(토스트)으로 표시");
 		Add("Lock movement when casting or performing certain actions.", "시전 중이거나 특정 기술을 쓸 때 이동 잠금");
 		Add("Unlock movement when pressing both left and right mouse buttons.", "마우스 양쪽 버튼을 함께 누르면 이동 잠금 해제");
-		Add("Lock actions when casting Passage Of Arms during AOE mitigations.", "광역 경감 중 Passage of Arms 시전 동안 기술 잠금");
-		Add("Lock actions when casting Collective Unconscious during AOE mitigations.", "광역 경감 중 집단 무의식 시전 동안 기술 잠금");
-		Add("Lock actions when casting Phantom Flurry.", "Phantom Flurry 시전 동안 기술 잠금");
+		Add("Lock actions when casting Passage Of Arms during AOE mitigations.", "광역 경감 중 {a:7385} 시전 동안 기술 잠금");
+		Add("Lock actions when casting Collective Unconscious during AOE mitigations.", "광역 경감 중 {a:3613} 시전 동안 기술 잠금");
+		Add("Lock actions when casting Phantom Flurry.", "{a:23288} 시전 동안 기술 잠금");
 		Add("Only used automatically if coded into the rotation", "로테이션에 구현된 경우에만 자동 사용");
-		Add("Automatically use Anti-Knockback role actions (Arms Length, Surecast)", "넉백 방지 역할 기술(Arm's Length, Surecast) 자동 사용");
+		Add("Automatically use Anti-Knockback role actions (Arms Length, Surecast)", "넉백 방지 역할 기술({a:7548}, {a:7559}) 자동 사용");
 		Add("Automatically use HP Potions", "HP 물약 자동 사용");
 		Add("Use HP Potions when HP% is lower than this", "HP%가 이 값보다 낮으면 HP 물약 사용");
 		Add("Automatically use MP Potions", "MP 물약 자동 사용");
 		Add("Use MP Potions when MP% is lower than this", "MP%가 이 값보다 낮으면 MP 물약 사용");
-		Add("Automatically use Phoenix Down", "불사조의 꼬리 자동 사용");
-		Add("Use Phoenix Down only if no Raiser alive in party", "파티에 살아 있는 부활 가능 직업이 없을 때만 불사조의 꼬리 사용");
+		Add("Automatically use Phoenix Down", "{i:4570} 자동 사용");
+		Add("Use Phoenix Down only if no Raiser alive in party", "파티에 살아 있는 부활 가능 직업이 없을 때만 {i:4570} 사용");
 		Add("Use damaging gap closer abilites if the distance to your target is less than this.", "대상과의 거리가 이 값보다 가까우면 피해를 주는 돌진 기술 사용");
 		Add("Allow the use of AOEs against priority-marked targets.", "우선 표식이 있는 대상에게 광역 기술 허용");
 		Add("Teaching mode", "교습 모드");
@@ -119,10 +130,10 @@ internal static partial class HimechanKoreanStrings
 		Add("Auto turn on manual mode when attacked.", "공격받으면 수동 모드 자동 켜기");
 		Add("Auto turn on auto mode when party is in combat.", "파티가 전투 중이면 자동 모드 자동 켜기");
 		Add("Auto turn on auto mode when alliance is in combat.", "얼라이언스가 전투 중이면 자동 모드 자동 켜기");
-		Add("Auto turn on auto mode when in combat in Bozja/Eureka/Occult Fate/CE", "보즈야/에우레카/오컬트 FATE/CE에서 전투 중이면 자동 모드 자동 켜기");
+		Add("Auto turn on auto mode when in combat in Bozja/Eureka/Occult Fate/CE", "보즈야/에우레카/{t:38} FATE/CE에서 전투 중이면 자동 모드 자동 켜기");
 		Add("Use healing abilities when playing a non-healer role.", "힐러가 아닌 역할에서도 회복 기술 사용");
 		Add("Use interrupt abilities if possible.", "가능하면 시전 방해 기술 사용");
-		Add("Provoke anything not on the no provoke list.", "도발 금지 목록에 없는 모든 적 도발");
+		Add("Provoke anything not on the no provoke list.", "{a:7533} 금지 목록에 없는 모든 적에게 {a:7533}");
 		Add("Stop casting if the target dies.", "대상이 죽으면 시전 중지");
 		Add("Cleanse all dispellable debuffs regardless of healing.", "회복 상황과 관계없이 해제 가능한 디버프는 모두 해제");
 		Add("Debug Mode", "디버그 모드");
@@ -170,11 +181,11 @@ internal static partial class HimechanKoreanStrings
 		Add("Number of hostiles", "적 수");
 		Add("HP%% needed to use single/self targetted mitigation on Tanks", "탱커에게 단일/자기 대상 경감을 쓸 HP%%");
 		Add("Automatically activate tank stance", "탱커 자세 자동 켜기");
-		Add("Auto provoke when there is another tank in party", "파티에 다른 탱커가 있으면 자동 도발");
-		Add("Auto True North (Melee DPS)", "진북 자동 사용(근접 딜러)");
+		Add("Auto provoke when there is another tank in party", "파티에 다른 탱커가 있으면 자동 {a:7533}");
+		Add("Auto True North (Melee DPS)", "{a:7546} 자동 사용(근접 딜러)");
 		Add("Use movement speed increase abilities when out of combat and in duty.", "임무 중 비전투 상태에서 이동 속도 증가 기술 사용");
 		Add("Use movement speed increase abilities when out of combat and out of duty.", "임무 밖 비전투 상태에서 이동 속도 증가 기술 사용");
-		Add("Use Sprint when a party tank is sprinting (non-tanks only).", "파티 탱커가 전력 질주하면 함께 전력 질주(탱커 외)");
+		Add("Use Sprint when a party tank is sprinting (non-tanks only).", "파티 탱커가 {a:3} 중이면 함께 {a:3}(탱커 외)");
 		Add("Use beneficial ground-targeted actions", "이로운 지면 지정 기술 사용");
 		Add("Use beneficial ground-targeted actions when moving.", "이동 중에도 이로운 지면 지정 기술 사용");
 		Add("Use beneficial ground-targeted actions only on self, skipping other logic.", "이로운 지면 지정 기술을 다른 로직 없이 자기 위치에만 사용");
@@ -204,13 +215,13 @@ internal static partial class HimechanKoreanStrings
 		Add("Heal healer first if their HP is lower than this.", "힐러 HP가 이 값보다 낮으면 힐러 먼저 회복");
 		Add("Heal self first if your HP is lower than this.", "내 HP가 이 값보다 낮으면 나부터 회복");
 		Add("Prioritize raising dead players over Healing/Defense.", "회복/방어보다 사망자 부활 우선");
-		Add("Raise player by using Swiftcast/Dualcast if available", "가능하면 신속한 마법/연속 마법으로 부활");
+		Add("Raise player by using Swiftcast/Dualcast if available", "가능하면 {a:7561}/{s:1249} 사용해 부활");
 		Add("Hard cast Raise logic", "일반 시전 부활 로직");
 		Add("Raise styles", "부활 방식");
-		Add("Raise players that have the Brink of Death debuff", "빈사 디버프가 있는 플레이어도 부활");
+		Add("Raise players that have the Brink of Death debuff", "{s:44} 디버프가 있는 플레이어도 부활");
 		Add("Raise non-Healers from bottom of party list to the top (Light Party 2 Healer Behavior)", "힐러가 아닌 사망자는 파티 목록 아래부터 부활(4인 파티 2힐러 방식)");
 		Add("Raise Red Mage and Summoners first if no Tanks or Healers are dead", "탱커·힐러 사망자가 없으면 적마도사·소환사 먼저 부활");
-		Add("How early before next GCD should RSR use swiftcast for raise", "부활용 신속한 마법을 다음 GCD 몇 초 전에 쓸지");
+		Add("How early before next GCD should RSR use swiftcast for raise", "부활용 {a:7561}: 다음 GCD 몇 초 전에 쓸지");
 		Add("Random delay range for resurrecting players.", "부활 무작위 지연 범위");
 		Add("Random delay range for dispelling statuses.", "디스펠 무작위 지연 범위");
 		Add("Never raise player if MP is less than this", "MP가 이 값보다 적으면 부활하지 않음");
@@ -225,7 +236,7 @@ internal static partial class HimechanKoreanStrings
 		Add("The duration of special windows opened by /rotation commands by default.", "/rotation 명령으로 여는 특수 상태의 기본 지속 시간");
 		Add("Random range of delay for RSR to stop attacking when the target is dead or immune to damage.", "대상이 죽거나 무적일 때 공격을 멈추기까지의 무작위 지연 범위");
 		Add("The range of random delay before interrupting hostile targets.", "적 시전 방해 전 무작위 지연 범위");
-		Add("Provoke random delay range.", "도발 무작위 지연 범위");
+		Add("Provoke random delay range.", "{a:7533} 무작위 지연 범위");
 		Add("Not In Combat random delay range.", "비전투 상태 무작위 지연 범위");
 		Add("Clicking actions random delay range.", "기술 클릭 무작위 지연 범위");
 		Add("Downtime healing delay range.", "다운타임 회복 지연 범위");
@@ -278,40 +289,40 @@ internal static partial class HimechanKoreanStrings
 		Add("Engage settings", "교전 설정");
 		Add("The modifier key to unlock the movement temporarily", "이동 잠금을 잠시 푸는 보조 키");
 		Add("Random range of simulated presses per action", "기술당 모의 입력 횟수의 무작위 범위");
-		Add("MP threshold under which to use Lucid Dreaming", "자각몽을 쓸 MP 기준값");
+		Add("MP threshold under which to use Lucid Dreaming", "{a:7562} 사용 MP 기준값");
 		Add("The HP%% for tank to use invulnerability", "탱커가 무적기를 쓸 HP%%");
 	}
 
 	private static void AddConfigDescriptions()
 	{
-		Add("Treat OmegaM/OmegaF as immune if you have their corresponding Packet Filter status (also applies to Normal).", "해당 패킷 필터 상태가 있으면 오메가M/오메가F를 면역으로 취급(일반 난이도에도 적용).");
-		Add("Treat Wolf of Wind/Wolf of Stone as immune if you don't have the corresponding status for it.", "대응하는 상태가 없으면 바람 늑대/돌 늑대를 면역으로 취급.");
-		Add("This should clear up any targeting issues when a nail, the boss, and a flail are near each other at the same time.", "못·보스·도리깨가 동시에 가까이 있을 때의 대상 지정 문제를 줄입니다.");
+		Add("Treat OmegaM/OmegaF as immune if you have their corresponding Packet Filter status (also applies to Normal).", "해당 {s:1660}/{s:1661} 상태가 있으면 {n:7633}/{n:7634}를 면역으로 취급(일반 난이도에도 적용).");
+		Add("Treat Wolf of Wind/Wolf of Stone as immune if you don't have the corresponding status for it.", "대응하는 상태가 없으면 {n:13846}/{n:13847}를 면역으로 취급.");
+		Add("This should clear up any targeting issues when a nail, the boss, and a flail are near each other at the same time.", "{n:14303}·보스·{n:14302}가 동시에 가까이 있을 때의 대상 지정 문제를 줄입니다.");
 		Add("Treat Cells as immune if you don't have the corresponding status for it.", "대응하는 상태가 없으면 세포를 면역으로 취급.");
-		Add("Prioritize Doornail or Flail based on role and distance to target.", "역할과 거리에 따라 못 또는 도리깨를 우선 대상으로.");
-		Add("Priotize Red Hot if you have firesnaking buff, and Deep Blue if you have watersnaking buff (also applies to Normal).", "불뱀 버프가 있으면 Red Hot을, 물뱀 버프가 있으면 Deep Blue를 우선(일반 난이도에도 적용).");
-		Add("Treat Bismark Shell/Bismark Corona as immune if you don't have the Whaleback status", "고래등 상태가 없으면 비스마르크 껍질/코로나를 면역으로 취급");
-		Add("Treat Pall of Rage/Pall of Grief as immune if you don't have the corresponding status for it.", "대응하는 상태가 없으면 분노의 장막/비탄의 장막을 면역으로 취급.");
+		Add("Prioritize Doornail or Flail based on role and distance to target.", "역할과 거리에 따라 {n:14303} 또는 {n:14302}를 우선 대상으로.");
+		Add("Priotize Red Hot if you have firesnaking buff, and Deep Blue if you have watersnaking buff (also applies to Normal).", "{s:4974} 버프가 있으면 {n:14370} 우선, {s:4975} 버프가 있으면 {n:14369} 우선(일반 난이도에도 적용).");
+		Add("Treat Bismark Shell/Bismark Corona as immune if you don't have the Whaleback status", "{s:719} 상태가 없으면 {n:3649} 껍질/코로나를 면역으로 취급");
+		Add("Treat Pall of Rage/Pall of Grief as immune if you don't have the corresponding status for it.", "대응하는 상태가 없으면 분노의 장막/비탄의 장막(Pall)을 면역으로 취급.");
 		Add("Treat Shadow as immune if you don't have the corresponding status", "대응하는 상태가 없으면 그림자를 면역으로 취급");
-		Add("Treat Jagd Doll ads as immune when HP is less than 25%.", "야크트 돌 쫄의 HP가 25% 미만이면 면역으로 취급.");
-		Add("Treat True Heart ad as immune.", "진심 쫄을 면역으로 취급.");
-		Add("Treat OmegaM/OmegaF as immune if you have their corresponding Packet Filter status.", "해당 패킷 필터 상태가 있으면 오메가M/오메가F를 면역으로 취급.");
-		Add("Treat Crystal Of Darkness ad as immune.", "어둠의 크리스탈 쫄을 면역으로 취급.");
+		Add("Treat Jagd Doll ads as immune when HP is less than 25%.", "{n:3759} 쫄의 HP가 25% 미만이면 면역으로 취급.");
+		Add("Treat True Heart ad as immune.", "{n:4694} 쫄을 면역으로 취급.");
+		Add("Treat OmegaM/OmegaF as immune if you have their corresponding Packet Filter status.", "해당 {s:1660}/{s:1661} 상태가 있으면 {n:7633}/{n:7634}를 면역으로 취급.");
+		Add("Treat Crystal Of Darkness ad as immune.", "{n:13556} 쫄을 면역으로 취급.");
 		Add("Treat bosses as immune if you don't have the corresponding status for it.", "대응하는 상태가 없으면 보스를 면역으로 취급.");
 		Add("Treat Colossus Rubricatus as immune while its casting scripted action which leads to its death.", "콜로서스 루브리카투스가 죽음으로 이어지는 연출 기술을 시전하는 동안 면역으로 취급.");
-		Add("Treat Liars Lyre as immune if you don't have the Unfooled status.", "Unfooled 상태가 없으면 거짓말쟁이의 수금을 면역으로 취급.");
+		Add("Treat Liars Lyre as immune if you don't have the Unfooled status.", "{s:386} 상태가 없으면 {n:8958}를 면역으로 취급.");
 		Add("Treat Jailers in second boss fight as immune if you don't have corresponding buff.", "2보스전에서 대응하는 버프가 없으면 간수를 면역으로 취급.");
-		Add("Treat Triton/Nereid/Phobos as immune if you don't have the corresponding status for it.", "대응하는 상태가 없으면 트리톤/네레이드/포보스를 면역으로 취급.");
-		Add("Treat the first boss of Forked Tower as immune if you don't have the corresponding status for it.", "대응하는 상태가 없으면 갈림탑 1보스를 면역으로 취급.");
+		Add("Treat Triton/Nereid/Phobos as immune if you don't have the corresponding status for it.", "대응하는 상태가 없으면 {n:13730}/{n:13731}/{n:13732}를 면역으로 취급.");
+		Add("Treat the first boss of Forked Tower as immune if you don't have the corresponding status for it.", "대응하는 상태가 없으면 포크 타워 1보스를 면역으로 취급.");
 		Add("Treat Tiny Mage CE mobs as immune if you're more than 5 yalms away and they are not the farthest along their cast.", "5야드 이상 떨어져 있고 시전이 가장 많이 진행된 개체가 아니면 꼬마 마도사 CE 몬스터를 면역으로 취급.");
-		Add("Enable tracking of elemental weaknesses for debug. This enables you to track weaknesses to report to dev. See Debug > Occult Crescent Weaknesses.", "디버그용 속성 약점 추적을 켭니다. 개발자에게 보고할 약점을 기록할 수 있습니다. 디버그 > Occult Crescent 약점 참조.");
-		Add("Treat Eminent Grief as immune if you don't have Light Vengeance buff, and treat Devoured Eater as immune if you don't have Dark Vengeance buff.", "빛의 복수 버프가 없으면 Eminent Grief를, 어둠의 복수 버프가 없으면 Devoured Eater를 면역으로 취급.");
-		Add("Treat Thanatos as immune if you don't have Astral Realignment buff.", "Astral Realignment 버프가 없으면 타나토스를 면역으로 취급.");
-		Add("Treat Irminsul and Sawtooth as immune if you don't have corresponding buff.", "대응하는 버프가 없으면 이르민술과 톱니를 면역으로 취급.");
+		Add("Enable tracking of elemental weaknesses for debug. This enables you to track weaknesses to report to dev. See Debug > Occult Crescent Weaknesses.", "디버그용 속성 약점 추적을 켭니다. 개발자에게 보고할 약점을 기록할 수 있습니다. 디버그 > {t:38} 약점 참조.");
+		Add("Treat Eminent Grief as immune if you don't have Light Vengeance buff, and treat Devoured Eater as immune if you don't have Dark Vengeance buff.", "{s:4560} 버프가 없으면 {n:14037}를, {s:4559} 버프가 없으면 {n:14038}를 면역으로 취급.");
+		Add("Treat Thanatos as immune if you don't have Astral Realignment buff.", "{s:398} 버프가 없으면 {n:710}를 면역으로 취급.");
+		Add("Treat Irminsul and Sawtooth as immune if you don't have corresponding buff.", "대응하는 버프가 없으면 {n:4623}·{n:4624} 모두 면역으로 취급.");
 		Add("Treat each Superior Flight Unit as immune if you don't have corresponding buff.", "대응하는 버프가 없으면 각 상위 비행 유닛을 면역으로 취급.");
-		Add("Treat each Hansel/Gretel as immune if you are at an angle that would cause you to take rebound damage from the shield mechanic.", "방패 기믹의 반사 피해를 받을 각도에 있으면 해당 헨젤/그레텔을 면역으로 취급.");
-		Add("Treat each Ark Angel as immune if you don't have corresponding buff.", "대응하는 버프가 없으면 각 방주의 천사를 면역으로 취급.");
-		Add("Treat Alexander and/or Gordius Systems as immune if they have Perfect Defense.", "완전 방어 상태인 알렉산더/고르디우스 시스템을 면역으로 취급.");
+		Add("Treat each Hansel/Gretel as immune if you are at an angle that would cause you to take rebound damage from the shield mechanic.", "방패 기믹의 반사 피해를 받을 각도에 있으면 해당 {n:9988}/{n:9989} 개체를 면역으로 취급.");
+		Add("Treat each Ark Angel as immune if you don't have corresponding buff.", "대응하는 버프가 없으면 각 아크 엔젤을 면역으로 취급.");
+		Add("Treat Alexander and/or Gordius Systems as immune if they have Perfect Defense.", "{s:5376} 상태인 {n:5174}/고르디우스 시스템을 면역으로 취급.");
 		Add("Treat Cloud of Darkness/Stygian as immune if you don't have corresponding buff.", "대응하는 버프가 없으면 어둠의 구름/스티기안을 면역으로 취급.");
 		Add("Custom logic to treat certain drakes as immune to kill them in a specific order for the purposes Variant path 12.", "변형 던전 12번 경로를 위해 특정 드레이크를 정해진 순서로 잡도록 면역 처리하는 로직.");
 		Add("Priotizes limited time mobs in treasure dungeons to resolve extra loot mechanic.", "보물 던전에서 추가 보상 기믹을 위해 시간제한 몬스터를 우선.");
@@ -332,7 +343,7 @@ internal static partial class HimechanKoreanStrings
 		Add("Enable to automatically use anti-knockback abilities when needed based on anti-knockback action list in List menu.", "켜면 목록 메뉴의 넉백 방지 기술 목록을 기준으로 필요할 때 넉백 방지 기술을 자동 사용합니다.");
 		Add("Enable to allow the plugin to use HP potions automatically.", "켜면 플러그인이 HP 물약을 자동으로 사용합니다.");
 		Add("Enable to allow the plugin to use MP potions automatically.", "켜면 플러그인이 MP 물약을 자동으로 사용합니다.");
-		Add("Enable to allow the plugin to use Phoenix Down item. (Experimental feature)", "켜면 플러그인이 불사조의 꼬리를 사용합니다(실험적 기능).");
+		Add("Enable to allow the plugin to use Phoenix Down item. (Experimental feature)", "켜면 플러그인이 {i:4570} 아이템을 사용합니다(실험적 기능).");
 		Add("Enable to allow AoE actions to hit targets with priority markers.", "켜면 우선 표식이 있는 대상에게도 광역 기술이 들어갑니다.");
 		Add("When teaching mode is active, automatically switch your target to match the rotation's suggested action target. Useful for tanks and healers where the optimal target may differ from your current selection.", "교습 모드에서 로테이션이 제안한 기술의 대상으로 내 대상을 자동으로 바꿉니다. 최적 대상이 현재 선택과 다를 수 있는 탱커·힐러에게 유용합니다.");
 		Add("When teaching mode is active, display the rotation's suggested target name below the Next Action icon. Shown in orange if you don't have that target selected, green if you do.", "교습 모드에서 다음 행동 아이콘 아래에 로테이션이 제안한 대상 이름을 표시합니다. 그 대상을 선택하지 않았으면 주황색, 선택했으면 초록색입니다.");
@@ -350,15 +361,17 @@ internal static partial class HimechanKoreanStrings
 		Add("If you have another healer on the team, their healing might put the target player(s) above the healing threshold and you'll waste MP. This interrupts the cast if it happens.", "파티에 다른 힐러가 있으면 그 힐러의 회복으로 대상이 기준값을 넘어 MP를 낭비할 수 있습니다. 그럴 때 시전을 끊습니다.");
 		Add("It is recommended to check this option if you are playing Raids or you can plan the heal and defense ability usage by yourself.", "레이드를 하거나 회복·방어 기술 사용을 직접 계획할 수 있다면 이 옵션을 켜는 것이 좋습니다.");
 		Add("When enabled and BossModReborn is loaded, RSR will use its timeline data to trigger defensive abilities before raidwides and tankbusters hit.", "켜져 있고 BossModReborn이 로드되어 있으면, 타임라인 데이터로 광역기·탱커버스터가 들어오기 전에 방어 기술을 씁니다.");
-		Add("Automatically use provoke when an enemy is attacking a non-tank member of the party while there is more than one tank in party.", "파티에 탱커가 둘 이상일 때 적이 탱커가 아닌 파티원을 공격하면 자동으로 도발합니다.");
+		Add("Automatically use provoke when an enemy is attacking a non-tank member of the party while there is more than one tank in party.", "파티에 탱커가 둘 이상일 때 적이 탱커가 아닌 파티원을 공격하면 자동으로 {a:7533}합니다.");
+		Add("1.    Self-Target Fallback:\r\nIf range is zero, always targets the player and returns all affectable targets at the player's position.\r\n2.    Preferred Positions (OnLocations):\r\n•    Tries to get predefined beneficial positions for the current territory.\r\n•    If none are found and the content is a trial or raid, uses fallback points (e.g., 0,0 or 100,100 point as those are the center of arenas most of the time).\r\n•    Picks the closest point to the player, applies a small random offset, and checks if it’s within effect range.\r\n•    If so, returns that as the target area.\r\n3.    Boss Positional Fallback:\r\n•    If the current target is a boss with positional requirements and within range, uses the boss’s position (or a point within range) as the target area.\r\n4.    Party Member Fallback:\r\n•    Gathers party members within range + effect range.\r\n•    Attempts to find a party member who is being attacked (tank or focus target).\r\n•    If found, calculates whether to stay at the player’s position or move closer to the tank, based on distances and effect range.\r\n•    If not found or not needed, defaults to the player’s position.", "1.    자기 위치 대체:\r\n범위가 0이면 항상 플레이어를 대상으로 하고 플레이어 위치에서 영향받는 대상을 모두 반환합니다.\r\n2.    선호 위치(OnLocations):\r\n•    현재 지역에 미리 정한 이로운 위치가 있는지 찾습니다.\r\n•    없고 콘텐츠가 토벌전·레이드이면 대체 지점(대개 경기장 중앙인 0,0 또는 100,100)을 씁니다.\r\n•    플레이어와 가장 가까운 지점을 골라 작은 무작위 오프셋을 더한 뒤 효과 범위 안인지 확인합니다.\r\n•    범위 안이면 그 지점을 대상 지역으로 반환합니다.\r\n3.    보스 방향 공격 대체:\r\n•    현재 대상이 방향 공격이 있는 보스이고 사거리 안이면 보스 위치(또는 사거리 안의 지점)를 대상 지역으로 씁니다.\r\n4.    파티원 대체:\r\n•    사거리 + 효과 범위 안의 파티원을 모읍니다.\r\n•    공격받는 파티원(탱커 또는 주시 대상)을 찾습니다.\r\n•    찾으면 거리와 효과 범위를 보고 플레이어 위치에 둘지 탱커 쪽으로 옮길지 계산합니다.\r\n•    못 찾거나 필요 없으면 플레이어 위치를 씁니다.");
 		Add("A scrolling record of the actions you use: GCDs on the top lane with their cast and recast, oGCDs beneath them with their animation lock.", "사용한 기술의 흐름 기록입니다. 위 줄은 GCD(시전·재사용), 아래 줄은 oGCD(애니메이션 잠금)입니다.");
 		Add("Stops the timeline from being moved or resized. Hover over it to unlock it again.", "타임라인을 옮기거나 크기를 바꾸지 못하게 합니다. 다시 풀려면 마우스를 올리세요.");
 		Add("Scales the whole timeline: the icons, the lanes and how far a second stretches.", "타임라인 전체(아이콘, 줄, 1초의 길이)의 크기를 조절합니다.");
+		Add("When enabled, non-healer jobs (such as DPS or tanks) will only use healing abilities if there are no healers in the party, or if all healers are incapacitated (at 0 HP). \r\nIf at least one healer is alive, non-healers will not use healing abilities.", "켜면 힐러가 아닌 직업(딜러·탱커)은 파티에 힐러가 없거나 힐러가 모두 쓰러졌을 때(HP 0)만 회복 기술을 씁니다. \r\n힐러가 한 명이라도 살아 있으면 회복 기술을 쓰지 않습니다.");
 		Add("When using a Blue Mage Rotation, RSR can automatically set your spell book to the spells required by that rotation.", "청마도사 로테이션을 쓸 때 RSR이 그 로테이션에 필요한 마법으로 마법서를 자동 설정합니다.");
-		Add("If this is disabled, you will never use Swiftcast/Dualcast to raise players.", "끄면 부활에 신속한 마법/연속 마법을 절대 쓰지 않습니다.");
+		Add("If this is disabled, you will never use Swiftcast/Dualcast to raise players.", "끄면 부활에 {a:7561}/{s:1249} 사용 안 함.");
 		Add("Controls how much party members' HP must differ before using AoE healing instead of single-target heals. Lower values require party members to have more similar HP for AoE healing to trigger (more selective). Higher values allow AoE healing even when HP differences are larger (less selective). Adjust only if you want to fine-tune AoE heal behavior.", "단일 회복 대신 광역 회복을 쓰려면 파티원 HP가 얼마나 비슷해야 하는지 정합니다. 낮을수록 HP가 더 비슷해야 광역 회복이 나가고(더 까다로움), 높을수록 차이가 커도 나갑니다(덜 까다로움). 광역 회복 동작을 세밀하게 조정할 때만 바꾸세요.");
 		Add("Experimental.", "실험적.");
-		Add("Experimental, includes Chaotic.", "실험적. 카오틱 포함.");
+		Add("Experimental, includes Chaotic.", "실험적. 멸(카오틱) 포함.");
 		Add("Scales the Next action icons in the Control window, and the icon in the Intercepted Action window. At 100% the GCD icon is 40 pixels and the oGCD icon is 30 pixels.", "조작 창의 다음 행동 아이콘과 가로챈 행동 창의 아이콘 크기를 조절합니다. 100%에서 GCD 아이콘은 40px, oGCD 아이콘은 30px입니다.");
 		Add("Scales the Control window's special buttons (Heal AoE, Forward, Dispel and the rest): their icons, labels and padding together. At 100% the GCD icon is 40 pixels and the oGCD icon is 30 pixels.", "조작 창의 특수 버튼(광역 회복, 전진, 디스펠 등)의 아이콘·글자·여백을 함께 조절합니다. 100%에서 GCD 아이콘은 40px, oGCD 아이콘은 30px입니다.");
 		Add("This setting controls how many oGCDs RSR will try to fit in a single GCD window\nLower numbers mean more oGCDs, but potentially more GCD clipping", "한 GCD 사이에 RSR이 oGCD를 몇 개 넣으려 할지 정합니다\n낮을수록 oGCD가 많이 들어가지만 GCD가 밀릴 수 있습니다");
@@ -369,15 +382,13 @@ internal static partial class HimechanKoreanStrings
 		Add("Show a toast when a cactbot broadcast is received and mapped to a RotationSolver special.", "cactbot 방송을 받아 RotationSolver 특수 상태로 연결하면 알림을 표시합니다.");
 		Add("If enabled, movement actions target the object or mob at the center of your screen. If disabled, they target the object or mob your character is facing.", "켜면 이동 기술이 화면 중앙의 오브젝트/몬스터를 향합니다. 끄면 캐릭터가 바라보는 오브젝트/몬스터를 향합니다.");
 		Add("Targets with attack markers will be prioritized for actions.", "공격 표식이 있는 대상을 기술 대상으로 우선합니다.");
-		Add("Enemy parts, such as Titan's Heart, will be prioritized as targets.", "타이탄의 심장 같은 적의 부위를 대상으로 우선합니다.");
+		Add("Enemy parts, such as Titan's Heart, will be prioritized as targets.", "{n:1802} 같은 적의 부위를 대상으로 우선합니다.");
 		Add("Targets with stop markers will not be attacked.", "정지 표식이 있는 대상은 공격하지 않습니다.");
 		Add("Targets with only 1 HP will be treated as invincible and ignored; for rare cases where target is invincible but is not given a status for it.", "HP가 1인 대상을 무적으로 취급해 무시합니다. 무적인데 상태 효과가 없는 드문 경우를 위한 설정입니다.");
 		Add("When in a Fate, only Fate targets are considered. When not in a Fate, Fate targets are ignored.", "FATE 중에는 FATE 대상만 고려하고, FATE 밖에서는 FATE 대상을 무시합니다.");
 		Add("If this is disabled, RSR will only use the game's built-in soft-targeting for allies for heals, shields, etc.", "끄면 회복·보호막 등 아군 대상 기술에 게임 기본 소프트 타겟만 씁니다.");
 		Add("(Do not set too low, can rip newly aggro'd dungeon mobs off tanks).", "(너무 낮게 두지 마세요. 던전에서 갓 어그로가 끌린 몬스터를 탱커에게서 빼앗을 수 있습니다.)");
 		Add("If the selection mode is based on character facing, i.e., targets within the character's viewpoint are moveable targets.\nIf the selection mode is screen-centered, i.e., targets within a sector drawn upward from the character's point are movable targets.", "캐릭터 방향 기준이면 캐릭터 시점 안의 대상이 이동 대상입니다.\n화면 중앙 기준이면 캐릭터 위치에서 위쪽으로 그린 부채꼴 안의 대상이 이동 대상입니다.");
-		Add("1.    Self-Target Fallback:\r\nIf range is zero, always targets the player and returns all affectable targets at the player's position.\r\n2.    Preferred Positions (OnLocations):\r\n•    Tries to get predefined beneficial positions for the current territory.\r\n•    If none are found and the content is a trial or raid, uses fallback points (e.g., 0,0 or 100,100 point as those are the center of arenas most of the time).\r\n•    Picks the closest point to the player, applies a small random offset, and checks if it’s within effect range.\r\n•    If so, returns that as the target area.\r\n3.    Boss Positional Fallback:\r\n•    If the current target is a boss with positional requirements and within range, uses the boss’s position (or a point within range) as the target area.\r\n4.    Party Member Fallback:\r\n•    Gathers party members within range + effect range.\r\n•    Attempts to find a party member who is being attacked (tank or focus target).\r\n•    If found, calculates whether to stay at the player’s position or move closer to the tank, based on distances and effect range.\r\n•    If not found or not needed, defaults to the player’s position.", "1.    자기 위치 대체:\r\n범위가 0이면 항상 플레이어를 대상으로 하고 플레이어 위치에서 영향받는 대상을 모두 반환합니다.\r\n2.    선호 위치(OnLocations):\r\n•    현재 지역에 미리 정한 이로운 위치가 있는지 찾습니다.\r\n•    없고 콘텐츠가 토벌전·레이드이면 대체 지점(대개 경기장 중앙인 0,0 또는 100,100)을 씁니다.\r\n•    플레이어와 가장 가까운 지점을 골라 작은 무작위 오프셋을 더한 뒤 효과 범위 안인지 확인합니다.\r\n•    범위 안이면 그 지점을 대상 지역으로 반환합니다.\r\n3.    보스 방향 공격 대체:\r\n•    현재 대상이 방향 공격이 있는 보스이고 사거리 안이면 보스 위치(또는 사거리 안의 지점)를 대상 지역으로 씁니다.\r\n4.    파티원 대체:\r\n•    사거리 + 효과 범위 안의 파티원을 모읍니다.\r\n•    공격받는 파티원(탱커 또는 주시 대상)을 찾습니다.\r\n•    찾으면 거리와 효과 범위를 보고 플레이어 위치에 둘지 탱커 쪽으로 옮길지 계산합니다.\r\n•    못 찾거나 필요 없으면 플레이어 위치를 씁니다.");
-		Add("When enabled, non-healer jobs (such as DPS or tanks) will only use healing abilities if there are no healers in the party, or if all healers are incapacitated (at 0 HP). \r\nIf at least one healer is alive, non-healers will not use healing abilities.", "켜면 힐러가 아닌 직업(딜러·탱커)은 파티에 힐러가 없거나 힐러가 모두 쓰러졌을 때(HP 0)만 회복 기술을 씁니다. \r\n힐러가 한 명이라도 살아 있으면 회복 기술을 쓰지 않습니다.");
 		Add("RB is for gamepad player.", "RB는 게임패드 사용자용입니다.");
 	}
 }

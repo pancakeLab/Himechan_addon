@@ -1,6 +1,10 @@
 namespace RotationSolver.Himechan;
 
-/// <summary>Korean dictionary, keyed by RSR's English text. Part 1: UiString descriptions (Data/UiString.cs).</summary>
+/// <summary>
+/// Korean dictionary, keyed by RSR's English text. Part 1: UiString descriptions (Data/UiString.cs).
+/// Game names are never typed by hand: {a:ID} action, {s:ID} status, {i:ID} item, {c:ID} duty, {n:ID} enemy,
+/// {t:ID} content type are resolved from the client's own (official) game data at runtime.
+/// </summary>
 internal static partial class HimechanKoreanStrings
 {
 	internal static readonly Dictionary<string, string> Map = new(StringComparer.Ordinal);
@@ -39,7 +43,7 @@ internal static partial class HimechanKoreanStrings
 		Add("Minimum", "최소");
 		Add("Maximum", "최대");
 		Add("This includes almost all information available in one combat frame, including the status of all party members, hostile target statuses, skill cooldowns, MP and HP of characters, character locations, hostile target casting status, combo state, combat duration, player level, etc.\n\nIt will then highlight the best action on the hotbar, or help you click it.", "한 전투 프레임에서 얻을 수 있는 거의 모든 정보를 사용합니다. 파티원 전원의 상태, 적 대상의 상태, 기술 재사용 대기시간, 캐릭터의 MP와 HP, 위치, 적의 시전 상태, 콤보 상태, 전투 시간, 플레이어 레벨 등입니다.\n\n그다음 핫바에서 가장 좋은 행동을 강조 표시하거나, 대신 눌러 줍니다.");
-		Add("This is designed for general combat, with optimizations for savage/ultimate content needing to be hand tuned. \n\nBe mindful of your usage in savage/ultimate content.", "일반 전투용으로 설계되었으며, 영식·절 콘텐츠 최적화는 직접 손봐야 합니다. \n\n영식·절 콘텐츠에서는 사용에 주의하세요.");
+		Add("This is designed for general combat, with optimizations for savage/ultimate content needing to be hand tuned. \n\nBe mindful of your usage in savage/ultimate content.", "일반 전투용으로 설계되었으며, 영웅(영식)·절 콘텐츠 최적화는 직접 손봐야 합니다. \n\n영웅·절 콘텐츠에서는 사용에 주의하세요.");
 		Add("RSR has helped you by clicking actions {0:N0} times.", "RSR이 지금까지 행동을 {0:N0}번 대신 눌러 드렸습니다.");
 		Add("State Macros", "상태 매크로");
 		Add("Action and Setting Macros", "기술·설정 매크로");
@@ -62,7 +66,7 @@ internal static partial class HimechanKoreanStrings
 		Add("Duty Rotation Status", "임무 로테이션 상태");
 		Add("Used to customize when RSR uses specific actions automatically. Click on an action's icon in the left list. Below, you may set the conditions for when that specific action is used. Each action can have different conditions to override the default rotation behavior.", "RSR이 특정 기술을 언제 자동으로 쓸지 정합니다. 왼쪽 목록에서 기술 아이콘을 클릭하고, 아래에서 그 기술의 사용 조건을 설정하세요. 기술마다 다른 조건을 두어 기본 로테이션 동작을 덮어쓸 수 있습니다.");
 		Add("Allow action to be intercepted by the intercept system", "가로채기 시스템이 이 기술을 가로채도록 허용");
-		Add("Prevent this action against a curated list of mobs (ie. Jagd Dolls)", "지정된 몬스터 목록(예: 야크트 돌)에는 이 기술을 쓰지 않음");
+		Add("Prevent this action against a curated list of mobs (ie. Jagd Dolls)", "지정된 몬스터 목록(예: {n:3759})에는 이 기술을 쓰지 않음");
 		Add("Allow action to be restricted by the minimum HP feature", "최소 HP 기능으로 이 기술을 제한하도록 허용");
 		Add("If target is below this percent, do not use this action", "대상 HP가 이 비율보다 낮으면 이 기술을 쓰지 않음");
 		Add("Skip BossModReborn position-safety check for this movement action", "이 이동 기술에는 BossModReborn 위치 안전 검사를 생략");
@@ -149,7 +153,7 @@ internal static partial class HimechanKoreanStrings
 		Add("Defense Area Forced Condition", "광역 방어 강제 조건");
 		Add("Defense Single Forced Condition", "단일 방어 강제 조건");
 		Add("Dispel/Stance/Positional Forced Condition", "디스펠/자세/방향 공격 강제 조건");
-		Add("Raise/Shirk Forced Condition", "부활/책임 전가 강제 조건");
+		Add("Raise/Shirk Forced Condition", "부활/{a:7537} 강제 조건");
 		Add("Move Forward Forced Condition", "전진 이동 강제 조건");
 		Add("Move Back Forced Condition", "후방 이동 강제 조건");
 		Add("Anti-Knockback Forced Condition", "넉백 방지 강제 조건");
@@ -174,8 +178,8 @@ internal static partial class HimechanKoreanStrings
 		Add("Member Name", "멤버 이름");
 		Add("Rotation is null. Please log in or switch jobs!", "로테이션이 없습니다. 로그인하거나 직업을 바꿔 보세요!");
 		Add("Ultimate", "절");
-		Add("Savage", "영식");
-		Add("Chaotic Alliance Raid", "카오틱 얼라이언스 레이드");
+		Add("Savage", "영웅(영식)");
+		Add("Chaotic Alliance Raid", "멸 얼라이언스 레이드");
 		Add("Extreme", "극");
 		Add("Dungeon", "던전");
 		Add("Deep Dungeon", "심층 던전");
@@ -184,8 +188,8 @@ internal static partial class HimechanKoreanStrings
 		Add("Alliance Raid", "얼라이언스 레이드");
 		Add("Field Ops", "필드 작전");
 		Add("PvP", "PvP");
-		Add("The Masked Carnivale", "가면 축제");
-		Add("Crucible of the Unbroken", "불굴의 도가니(Crucible of the Unbroken)");
+		Add("The Masked Carnivale", "{t:27}");
+		Add("Crucible of the Unbroken", "마수 시련장");
 		Add("Delay its transition to true", "참으로 바뀌는 시점을 지연");
 		Add("Delay its transition", "전환 시점을 지연");
 		Add("Sufficient Level", "레벨 충족");
@@ -219,7 +223,7 @@ internal static partial class HimechanKoreanStrings
 		Add("Tank Stance", "탱커 자세");
 		Add("Dispel", "디스펠");
 		Add("Positional", "방향 공격");
-		Add("Shirk", "책임 전가");
+		Add("Shirk", "{a:7537}");
 		Add("Raise", "부활");
 		Add("Move Forward", "전진 이동");
 		Add("Move Back", "후방 이동");
