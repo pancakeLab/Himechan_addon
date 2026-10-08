@@ -104,6 +104,7 @@ namespace RotationSolver.Updaters
 
 		private static unsafe bool UseActionDetour(ActionManager* actionManager, uint actionType, uint actionID, ulong targetObjectID, uint param, uint useType, int pvp, bool* isGroundTarget)
 		{
+			if (Himechan.HimechanHooks.ShouldRejectInput(actionType, actionID, targetObjectID, useType)) return false; // HIMECHAN-HOOK: Input
 			if (Player.Available && Service.Config.InterceptAction3 && DataCenter.State && DataCenter.InCombat && !DataCenter.IsPvP)
 			{
 				try

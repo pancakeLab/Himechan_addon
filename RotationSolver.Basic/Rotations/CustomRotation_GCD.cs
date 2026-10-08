@@ -22,6 +22,7 @@ public partial class CustomRotation
 		if (act is IBaseAction a && a.Info.IsRealGCD
 			&& a.CanUse(out _, usedUp: true, skipAoeCheck: true, skipStatusProvideCheck: true))
 		{
+			if (RotationSolver.Basic.Himechan.HimechanBasicHooks.OverrideQueuedGCD?.Invoke(this, a, out var himechanGcd) == true) { IBaseAction.ForceEnable = false; return himechanGcd; } // HIMECHAN-HOOK: OverrideQueuedGCD
 			return act;
 		}
 

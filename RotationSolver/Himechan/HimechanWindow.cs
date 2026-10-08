@@ -11,7 +11,7 @@ internal sealed class HimechanWindow : Window
 {
 	public HimechanWindow() : base("히메짱 WHM###HimechanMain", ImGuiWindowFlags.NoCollapse)
 	{
-		Size = new Vector2(420, 260);
+		Size = new Vector2(460, 480);
 		SizeCondition = ImGuiCond.FirstUseEver;
 		RespectCloseHotkey = true;
 	}
@@ -58,6 +58,39 @@ internal sealed class HimechanWindow : Window
 		if (!ctrl)
 		{
 			ImGui.EndDisabled();
+		}
+
+		ImGui.Separator();
+		ImGui.TextUnformatted("디버그 · 테스트");
+
+		var debug = settings.DebugMode;
+		if (ImGui.Checkbox("디버그 모드 (전투마다 로그 파일 저장)", ref debug))
+		{
+			settings.DebugMode = debug;
+			HimechanSettings.Save();
+		}
+		ImGui.TextWrapped("카운트다운부터 전투 종료까지 히메짱의 판단·사용·효과·적 시전을 파일로 남깁니다(최근 20개). 문제가 생기면 이 파일을 전달해 주세요.");
+		if (HimechanLog.LastFilePath != null)
+		{
+			ImGui.TextDisabled($"마지막 로그: {HimechanLog.LastFilePath}");
+		}
+
+		var test = settings.TestMode;
+		if (ImGui.Checkbox("테스트 모드 (혼자일 때 나를 탱커로 취급)", ref test))
+		{
+			settings.TestMode = test;
+			if (test)
+			{
+				HimechanProfile.Notify("테스트 모드를 켰습니다. 파티에 다른 플레이어가 없을 때만 탱커 대상 기능(오프너 탱커·물의 장막·신성한 축복)이 나를 대상으로 동작합니다. 게임을 다시 시작하면 꺼집니다.");
+			}
+		}
+		ImGui.TextWrapped(HimechanTanks.TestModeActive
+			? "테스트 모드 동작 중: 나를 탱커로 취급합니다."
+			: settings.TestMode ? "테스트 모드 켜짐 — 파티에 다른 플레이어가 있어 멈춰 있습니다." : "실제 파티에서는 쓰지 마세요. 저장되지 않아 재시작하면 꺼집니다.");
+
+		if (ImGui.Button("진단 내용을 채팅창에 출력"))
+		{
+			HimechanMain.PrintStatus();
 		}
 
 		ImGui.Separator();

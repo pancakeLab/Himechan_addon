@@ -58,6 +58,7 @@ namespace RotationSolver.Commands
 
 			_lastClickTime = DateTime.Now;
 
+			if (!isGCD && Himechan.HimechanHooks.AllowOpenerItemInGcdTail()) return true; // HIMECHAN-HOOK: OpenerPotion
 			if (!isGCD && DataCenter.DefaultGCDRemain <= 0.5f && DataCenter.DefaultGCDRemain > 0f)
 			{
 				return false;
@@ -135,7 +136,7 @@ namespace RotationSolver.Commands
 
 			CurrentAction = nextAction as IBaseAction;
 
-			if (nextAction.Use())
+			if (Himechan.HimechanHooks.Use(nextAction)) // HIMECHAN-HOOK: Use (was nextAction.Use())
 			{
 
 				_lastActionID = nextAction.AdjustedID;
@@ -335,6 +336,7 @@ namespace RotationSolver.Commands
 				var currentJob = Player.Job;
 				var jobChanged = currentJob != _previousJob;
 				_previousJob = currentJob;
+				var himechanKeepOpener = Himechan.HimechanHooks.KeepStateAfterCountdown(); // HIMECHAN-HOOK: CountdownHandoff
 
 				if (Svc.Condition[ConditionFlag.LoggingOut] ||
 					(Service.Config.AutoOffWhenDead && DataCenter.Territory != null && !DataCenter.Territory.IsPvP && Player.Object.CurrentHp == 0) ||
@@ -343,7 +345,7 @@ namespace RotationSolver.Commands
 					(Service.Config.AutoOffCutScene && !DataCenter.IsAutoDuty && Svc.Condition[ConditionFlag.OccupiedInCutSceneEvent]) ||
 					(Service.Config.AutoOffSwitchClass && jobChanged) ||
 					(Service.Config.AutoOffBetweenArea && !DataCenter.IsAutoDuty && (Svc.Condition[ConditionFlag.BetweenAreas] || Svc.Condition[ConditionFlag.BetweenAreas51])) ||
-					(Service.Config.CancelStateOnCombatBeforeCountdown && Service.CountDownTime > 0.2f && DataCenter.InCombat) ||
+					(Service.Config.CancelStateOnCombatBeforeCountdown && Service.CountDownTime > 0.2f && DataCenter.InCombat && !himechanKeepOpener /* HIMECHAN-HOOK: CountdownHandoff */) ||
 					(ActionUpdater.AutoCancelTime != DateTime.MinValue && DateTime.Now > ActionUpdater.AutoCancelTime))
 				{
 					if (DataCenter.State)
@@ -465,6 +467,7 @@ namespace RotationSolver.Commands
 					else if (Service.CountDownTime == 0 && _lastCountdownTime > 0.2f)
 					{
 						_lastCountdownTime = 0;
+						if (himechanKeepOpener) return; // HIMECHAN-HOOK: CountdownHandoff (opener keeps RSR on through the pull)
 						CancelState();
 						return;
 					}

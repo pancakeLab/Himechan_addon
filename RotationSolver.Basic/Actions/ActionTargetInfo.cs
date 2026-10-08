@@ -140,7 +140,7 @@ public struct ActionTargetInfo(IBaseAction action)
 			// or the target is the currently selected hard-target
 			// or the target is ourselves
 			// then => Check target is in the view && ActionManager.CanUse on target && CanSee Target && action.setting predicate is true of target
-			if (!DataCenter.IsManual || IsTargetFriendly || target.GameObjectId == Svc.Targets.Target?.GameObjectId || target.GameObjectId == Player.Object.GameObjectId)
+			if (!DataCenter.IsManual || RotationSolver.Basic.Himechan.HimechanBasicHooks.AllowOffTargetInManual /* HIMECHAN-HOOK: AllowOffTargetInManual */ || IsTargetFriendly || target.GameObjectId == Svc.Targets.Target?.GameObjectId || target.GameObjectId == Player.Object.GameObjectId)
 			{
 				var view = TargetOnScreen(target);
 				var canUse = CanUseTo(target);

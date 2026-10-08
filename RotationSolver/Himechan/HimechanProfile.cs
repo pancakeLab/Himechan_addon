@@ -320,12 +320,15 @@ internal static class HimechanProfile
 }
 
 /// <summary>
-/// One-time conversions applied when a profile is first created from the original settings.
-/// #6 (Thin Air strategy stored as enum name) is added here when the Himechan rotation is ported.
+/// One-time setup when a profile is first created from the original settings (always while playing WHM).
+/// #6 needs nothing here: the source build stores enums as their Description text, which RSR reads back
+/// as long as those texts stay unchanged (see WHM_Himechan.ThinAirUsageStrategy).
 /// </summary>
 internal static class HimechanMigration
 {
 	public static void OnProfileCreated(Configs profile)
 	{
+		// The Himechan profile starts with the Himechan rotation selected for WHM (RotationChoice is per job).
+		profile.RotationChoice = typeof(RebornRotations.Healer.WHM_Himechan).FullName ?? string.Empty;
 	}
 }

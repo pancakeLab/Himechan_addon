@@ -109,6 +109,7 @@ internal static class ActionUpdater
 		ActionTracer.BeginFrame();
 		try
 		{
+			if (Himechan.HimechanHooks.TryPriorityAction(customRotation, out var himechanNext, out var himechanGcd)) { NextAction = himechanNext; NextGCDAction = himechanGcd; return; } // HIMECHAN-HOOK: PriorityAction
 			if (localPlayer != null && customRotation != null
 				&& customRotation.TryInvoke(out var newAction, out var gcdAction))
 			{

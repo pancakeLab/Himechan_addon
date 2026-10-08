@@ -15,6 +15,13 @@ internal sealed class HimechanSettings
 	/// <summary>Use the Himechan profile while playing White Mage.</summary>
 	public bool Enabled { get; set; } = false;
 
+	/// <summary>Spec 3.11 / #27: write a combat log file per fight (Himechan/logs).</summary>
+	public bool DebugMode { get; set; } = false;
+
+	/// <summary>Spec 3.11 / #30: while solo, treat the player as the tank. Never saved, so it is always off after a restart.</summary>
+	[JsonIgnore]
+	public bool TestMode { get; set; } = false;
+
 	[JsonIgnore]
 	public static HimechanSettings Current { get; private set; } = new();
 
@@ -53,6 +60,7 @@ internal static class HimechanPaths
 	public static string SettingsFile => Path.Combine(Directory, "settings.json");
 	public static string ProfileFile => Path.Combine(Directory, "profile.json");
 	public static string BackupDirectory => Path.Combine(Directory, "backups");
+	public static string LogDirectory => Path.Combine(Directory, "logs");
 
 	/// <summary>Write to a temp file first and then replace, so a crash never leaves a half-written file.</summary>
 	public static void WriteAtomic(string path, string content)
