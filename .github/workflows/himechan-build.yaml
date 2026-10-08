@@ -1,0 +1,68 @@
+# HIMECHAN: build-only workflow for the himechan branch.
+# Mirrors upstream build.yaml / publish.yaml steps so a green run means
+# "builds exactly the way upstream builds". Upstream workflow files are left untouched
+# to keep upstream merges conflict-free.
+name: Himechan Build
+
+on:
+  push:
+    branches:
+      - himechan
+  pull_request:
+    branches:
+      - himechan
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: himechan-build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  Build:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v6
+        with:
+          submodules: true
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Download Dalamud Latest
+        shell: pwsh
+        run: |
+          Invoke-WebRequest -Uri https://goatcorp.github.io/dalamud-distrib/latest.zip -OutFile latest.zip
+          Expand-Archive -Force latest.zip -DestinationPath "$env:AppData\XIVLauncher\addon\Hooks\dev"
+
+      - name: Restore NuGet Packages
+        run: dotnet restore RotationSolver/RotationSolver.csproj
+
+      - name: Build Plugin
+        run: dotnet build --no-restore -c Release RotationSolver/RotationSolver.csproj --output .\build
+
+      - name: Report Output
+        shell: pwsh
+        run: |
+          $zip = "build/RotationSolver/latest.zip"
+          if (-not (Test-Path $zip)) { Get-ChildItem -Recurse build | Select-Object FullName, Length | Format-Table -AutoSize; throw "latest.zip not found at $zip" }
+          "latest.zip SHA256: " + (Get-FileHash $zip -Algorithm SHA256).Hash
+          foreach ($dll in @("build/RotationSolver.dll", "build/RotationSolver.Basic.dll")) {
+            if (Test-Path $dll) {
+              $v = [System.Diagnostics.FileVersionInfo]::GetVersionInfo((Resolve-Path $dll))
+              "{0}: FileVersion={1} ProductVersion={2} SHA256={3}" -f (Split-Path $dll -Leaf), $v.FileVersion, $v.ProductVersion, (Get-FileHash $dll -Algorithm SHA256).Hash
+            }
+          }
+
+      - name: Upload latest.zip
+        uses: actions/upload-artifact@v4
+        with:
+          name: RotationSolver-himechan-${{ github.sha }}
+          path: build/RotationSolver/latest.zip
+          if-no-files-found: error
+          retention-days: 14
