@@ -456,7 +456,8 @@ public sealed partial class WHM_Himechan
 			if (now - _aquaveilScanLogAt >= 2.0)
 			{
 				_aquaveilScanLogAt = now;
-				RecordHimechanDiagnostic($"AQ CAST id={hostile.CastActionId} tgt={hostile.CastTargetObjectId} rem={remain:F2}");
+				var known = HimechanCactbotTankbusters.CastIds.Contains(hostile.CastActionId) ? "cactbot" : (busterList != null && busterList.Contains(hostile.CastActionId) ? "rsr" : "-");
+				RecordHimechanDiagnostic($"AQ CAST id={hostile.CastActionId} tgt={hostile.CastTargetObjectId} rem={remain:F2} list={known}");
 			}
 
 			if (remain > WHMHimechanPolicy.AquaveilCastWindow)
@@ -470,9 +471,10 @@ public sealed partial class WHM_Himechan
 				return castTarget;
 			}
 
-			// Cast not aimed at a tank (e.g. a self-targeted savage buster): use RSR's tankbuster
-			// action list, target = the boss's current target (rev32, from KR savage logs).
-			if (busterList != null && busterList.Contains(hostile.CastActionId)
+			// Cast not aimed at a tank (e.g. a self-targeted savage buster): use RSR's tankbuster action list
+			// (List tab, user-editable) or the list generated from cactbot's triggers; target = the boss's
+			// current target (rev32, from KR savage logs).
+			if (((busterList != null && busterList.Contains(hostile.CastActionId)) || HimechanCactbotTankbusters.CastIds.Contains(hostile.CastActionId))
 				&& Svc.Objects.SearchById(hostile.TargetObjectId) is IBattleChara bossTarget
 				&& HimechanTanks.IsTank(bossTarget) && !bossTarget.IsEnemy())
 			{

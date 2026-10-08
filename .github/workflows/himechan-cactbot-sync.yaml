@@ -1,0 +1,57 @@
+# HIMECHAN: regenerate the cactbot-derived tankbuster cast-id list (spec #12) every week.
+# Data only (cactbot triggers, Apache-2.0). A change is built first and committed as pancakeLab.
+name: Himechan Cactbot Sync
+
+on:
+  schedule:
+    - cron: '41 3 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: himechan-cactbot-sync
+  cancel-in-progress: false
+
+jobs:
+  Sync:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout himechan
+        uses: actions/checkout@v6
+        with:
+          ref: himechan
+
+      - name: Fetch cactbot triggers (sparse)
+        shell: pwsh
+        run: |
+          git clone -q --filter=blob:none --sparse https://github.com/OverlayPlugin/cactbot.git "$env:RUNNER_TEMP/cactbot"
+          git -C "$env:RUNNER_TEMP/cactbot" sparse-checkout set ui/raidboss/data resources
+          git -C "$env:RUNNER_TEMP/cactbot" log -1 --format='cactbot %h %ad' --date=short
+
+      - name: Regenerate list
+        id: gen
+        shell: pwsh
+        run: |
+          ./.github/himechan/cactbot-tankbusters.ps1 -CactbotDir "$env:RUNNER_TEMP/cactbot" -OutPath RotationSolver/Himechan/Localization/HimechanCactbotTankbusters.cs
+          $changed = (git status --porcelain RotationSolver/Himechan/Localization/HimechanCactbotTankbusters.cs) -ne $null
+          "changed=$changed" | Out-File -Append -FilePath $env:GITHUB_OUTPUT
+          if ($changed) { git --no-pager diff --stat } else { "no change" }
+
+      - name: Build
+        if: steps.gen.outputs.changed == 'True'
+        uses: ./.github/himechan/build
+
+      - name: Commit
+        if: steps.gen.outputs.changed == 'True'
+        shell: pwsh
+        run: |
+          git config user.name "pancakeLab"
+          git config user.email "339415906+pancakeLab@users.noreply.github.com"
+          git add RotationSolver/Himechan/Localization/HimechanCactbotTankbusters.cs
+          $src = (Select-String -Path RotationSolver/Himechan/Localization/HimechanCactbotTankbusters.cs -Pattern 'Source = "([^"]+)"').Matches[0].Groups[1].Value
+          git commit -m "HIMECHAN: cactbot tankbuster list ($src) [skip ci]"
+          git pull --rebase origin himechan
+          git push origin HEAD:himechan
+          "::notice::tankbuster list updated from $src (released with the next sync/release)"
