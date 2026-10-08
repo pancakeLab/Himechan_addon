@@ -1447,6 +1447,7 @@ internal partial class Configs : IPluginConfiguration
 
 	public void Save()
 	{
+		if (RotationSolver.Basic.Himechan.HimechanBasicHooks.ConfigSave?.Invoke(this) == true) return; // HIMECHAN-HOOK: ConfigSave
 #if DEBUG
 		PluginLog.Information("Saved configurations.");
 #endif

@@ -173,6 +173,7 @@ public sealed class RotationSolverPlugin : IAsyncDalamudPlugin
 			BMRPlanUpdater.Enable();
 			ActionContextMenu.Init();
 			HotbarHighlightManager.Init();
+			Himechan.HimechanMain.Init(); // HIMECHAN-HOOK: Init
 
 			Svc.DutyState.DutyStarted += DutyState_DutyStarted;
 			Svc.DutyState.DutyWiped += DutyState_DutyWiped;
@@ -427,6 +428,7 @@ public sealed class RotationSolverPlugin : IAsyncDalamudPlugin
 		ActionTracer.Shutdown();
 
 		Service.Config.Save();
+		Himechan.HimechanMain.Dispose(); // HIMECHAN-HOOK: Dispose (after the final Save so it still goes to the right file)
 		await OtherConfiguration.Save();
 
 		AutoAttackUpdater.Disable();
