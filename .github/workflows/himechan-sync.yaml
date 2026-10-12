@@ -75,7 +75,7 @@ jobs:
         shell: pwsh
         run: |
           $latest = "${{ steps.upstream.outputs.latest }}"
-          $manifest = (git show "refs/upstream-tags/${latest}:RotationSolver/RotationSolver.json") -join "`n" | ConvertFrom-Json
+          $manifest = ((git show "refs/upstream-tags/${latest}:RotationSolver/RotationSolver.json") -join "`n").TrimStart([char]0xFEFF) | ConvertFrom-Json  # upstream file has a UTF-8 BOM; pwsh 7 JSON parser rejects it
           $api = [int]$manifest.DalamudApiLevel
           $csproj = (git show "refs/upstream-tags/${latest}:RotationSolver/RotationSolver.csproj") -join "`n"
           $sdk = if ($csproj -match 'Dalamud\.NET\.Sdk/([\d\.]+)') { $Matches[1] } else { '?' }
