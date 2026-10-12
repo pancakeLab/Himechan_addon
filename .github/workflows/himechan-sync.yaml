@@ -67,6 +67,7 @@ jobs:
           "latest_commit=$latestCommit" | Out-File -Append -FilePath $env:GITHUB_OUTPUT
           "current=$current" | Out-File -Append -FilePath $env:GITHUB_OUTPUT
           "needed=$(-not $already)" | Out-File -Append -FilePath $env:GITHUB_OUTPUT
+          exit 0  # git merge-base --is-ancestor leaves exit code 1 when not merged yet; that is not a failure
 
       - name: KR Dalamud API gate
         id: gate

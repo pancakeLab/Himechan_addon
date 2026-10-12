@@ -20,6 +20,29 @@ public sealed partial class WHM_Himechan
 	[RotationConfig(CombatType.PvE, Name = "고난도(영식·극·절)에서만 사용", Parent = nameof(AutoAquaveilHighEnd), ParentValue = true)]
 	public bool AquaveilHighEndOnly { get; set; } = false;
 
+	// Busters the party handles by hand (user decision 2026-10-12): M11S Foregone Fatality 필멸선 (46048, 46134),
+	// M12S Mortal Slayer 죽음의 재앙 (46229, 46230, 46232). While one of these is being cast, no automatic Aquaveil at all.
+	[RotationConfig(CombatType.PvE, Name = "물의 장막 자동 사용 제외 기술 ID (쉼표 구분. 기본: 필멸선, 죽음의 재앙)", Parent = nameof(AutoAquaveilHighEnd), ParentValue = true,
+		Tooltip = "여기 적은 기술을 적이 시전하는 동안에는 물의 장막을 자동으로 쓰지 않습니다(시전 대상·목록·표식 판정 모두). 파티 상황에 따라 수동으로 대응할 탱커버스터를 적으세요. 디버그 로그에 AQ CAST id=… 로 기술 ID가 남습니다.")]
+	public string AquaveilExcludedCastIds { get; set; } = "46048, 46134, 46229, 46230, 46232";
+
+	private string? _aquaveilExcludedText;
+	private HashSet<uint> _aquaveilExcluded = [];
+
+	private HashSet<uint> AquaveilExcluded
+	{
+		get
+		{
+			var text = AquaveilExcludedCastIds;
+			if (!string.Equals(text, _aquaveilExcludedText, StringComparison.Ordinal))
+			{
+				_aquaveilExcluded = WHMHimechanPolicy.ParseBaseIds(text);
+				_aquaveilExcludedText = text;
+			}
+			return _aquaveilExcluded;
+		}
+	}
+
 	#region Solace request (/히메짱백합)
 	private bool _solaceRequest;
 	private ulong _solaceTarget;
@@ -444,12 +467,25 @@ public sealed partial class WHM_Himechan
 	private IBattleChara? FindTankbusterTarget()
 	{
 		var busterList = OtherConfiguration.HostileCastingTank;
+		var excluded = AquaveilExcluded;
 		var now = Now;
 		foreach (var hostile in DataCenter.AllHostileTargets)
 		{
 			if (hostile == null || !hostile.IsCasting)
 			{
 				continue;
+			}
+
+			// An excluded buster is in progress: the party handles it by hand, so suppress every path
+			// (including the lockon VFX one) until the cast is over.
+			if (excluded.Contains(hostile.CastActionId))
+			{
+				if (now - _aquaveilBlockLogAt >= 1.0)
+				{
+					_aquaveilBlockLogAt = now;
+					RecordHimechanDiagnostic($"AQ SKIP excluded id={hostile.CastActionId}");
+				}
+				return null;
 			}
 
 			var remain = hostile.TotalCastTime - hostile.CurrentCastTime;
