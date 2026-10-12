@@ -75,9 +75,9 @@ jobs:
         shell: pwsh
         run: |
           $latest = "${{ steps.upstream.outputs.latest }}"
-          $manifest = git show "refs/upstream-tags/${latest}:RotationSolver/RotationSolver.json" | ConvertFrom-Json
+          $manifest = (git show "refs/upstream-tags/${latest}:RotationSolver/RotationSolver.json") -join "`n" | ConvertFrom-Json
           $api = [int]$manifest.DalamudApiLevel
-          $csproj = git show "refs/upstream-tags/${latest}:RotationSolver/RotationSolver.csproj"
+          $csproj = (git show "refs/upstream-tags/${latest}:RotationSolver/RotationSolver.csproj") -join "`n"
           $sdk = if ($csproj -match 'Dalamud\.NET\.Sdk/([\d\.]+)') { $Matches[1] } else { '?' }
           $limit = [int](Get-Content .github/himechan/kr-dalamud-api-level.txt -TotalCount 1).Trim()
           "upstream $latest : DalamudApiLevel=$api, Dalamud.NET.Sdk=$sdk ; KR limit = $limit"
