@@ -291,6 +291,8 @@ internal static partial class HimechanKoreanStrings
 		Add("Random range of simulated presses per action", "기술당 모의 입력 횟수의 무작위 범위");
 		Add("MP threshold under which to use Lucid Dreaming", "{a:7562} 사용 MP 기준값");
 		Add("The HP%% for tank to use invulnerability", "탱커가 무적기를 쓸 HP%%");
+		// upstream 7.5.6.24
+		Add("Crucible of the Unbroken - Ymir logic.", "마수 시련장 - 이미르 로직");
 	}
 
 	private static void AddConfigDescriptions()
@@ -390,5 +392,7 @@ internal static partial class HimechanKoreanStrings
 		Add("(Do not set too low, can rip newly aggro'd dungeon mobs off tanks).", "(너무 낮게 두지 마세요. 던전에서 갓 어그로가 끌린 몬스터를 탱커에게서 빼앗을 수 있습니다.)");
 		Add("If the selection mode is based on character facing, i.e., targets within the character's viewpoint are moveable targets.\nIf the selection mode is screen-centered, i.e., targets within a sector drawn upward from the character's point are movable targets.", "캐릭터 방향 기준이면 캐릭터 시점 안의 대상이 이동 대상입니다.\n화면 중앙 기준이면 캐릭터 위치에서 위쪽으로 그린 부채꼴 안의 대상이 이동 대상입니다.");
 		Add("RB is for gamepad player.", "RB는 게임패드 사용자용입니다.");
+		// upstream 7.5.6.24
+		Add("Treat Ymir as immune if it has the Vulnerability Down buff.", "받는 피해 감소 버프가 있는 이미르를 면역으로 취급.");
 	}
 }

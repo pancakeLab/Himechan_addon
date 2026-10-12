@@ -178,6 +178,8 @@ internal static class HimechanProfile
 
 	private static void AfterSwap()
 	{
+		// RebornMaterial (upstream 7.5.6.24+) reads UI scale/accent from the object given at startup; point it at the active config.
+		try { RebornMaterial.M3.Settings = Service.Config; } catch (Exception ex) { PluginLog.Warning($"[Himechan] M3 settings rebind failed: {ex.Message}"); }
 		// A1 (spec 3.8.1): RotationUpdater only re-reads RotationChoice when job / PvE-PvP changes.
 		// Clearing the current rotation makes it pick again from the new config on the next frame.
 		DataCenter.CurrentRotation = null;

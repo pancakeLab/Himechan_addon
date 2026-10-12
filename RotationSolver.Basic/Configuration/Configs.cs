@@ -2,12 +2,13 @@
 using ECommons.DalamudServices;
 using ECommons.ExcelServices;
 using ECommons.Logging;
+using RebornMaterial;
 using System.Collections.Concurrent;
 using static RotationSolver.Basic.Configuration.ConfigTypes;
 
 namespace RotationSolver.Basic.Configuration;
 
-internal partial class Configs : IPluginConfiguration
+internal partial class Configs : IPluginConfiguration, IM3Settings
 {
 	[JsonIgnore]
 	public const string
@@ -51,6 +52,8 @@ internal partial class Configs : IPluginConfiguration
 
 	public bool ControlWindowLinkAutoFull { get; set; } = false;
 	public bool ControlWindowLinkManualCleave { get; set; } = false;
+
+	public bool IsMainWindowLock { get; set; } = false;
 
 	public List<ActionEventInfo> Events { get; private set; } = [];
 	public SortedSet<Job> DisabledJobs { get; private set; } = [];
@@ -260,6 +263,11 @@ internal partial class Configs : IPluginConfiguration
 	Description = "Sets mobs with number plates as top priority in order from lowest to highest to resolve extra loot mechanic.",
 	Filter = DutySpecificTreasureDungeon)]
 	private static readonly bool _treasuredungeonnumbered = true;
+
+	[ConditionBool, UI("Crucible of the Unbroken - Ymir logic.",
+	Description = "Treat Ymir as immune if it has the Vulnerability Down buff.",
+	Filter = DutySpecificCrucibleOfTheUnbroken)]
+	private static readonly bool _crucibleYmir = true;
 	#endregion
 
 	#region PvP
