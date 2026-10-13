@@ -44,8 +44,12 @@ if (-not $SkipRelease) {
     [IO.File]::WriteAllText($sums, "KRWardrobeCleaner.zip  $sha`n", [Text.UTF8Encoding]::new($false))
     $notesFile = Join-Path ([IO.Path]::GetTempPath()) 'wardrobe-release-notes.md'
     [IO.File]::WriteAllText($notesFile, $changelog + "`n", [Text.UTF8Encoding]::new($false))
-    gh release view $tag -R $Repo *> $null
-    if ($LASTEXITCODE -ne 0) {
+    # Windows PowerShell 5.1 turns native stderr into a terminating error under ErrorActionPreference=Stop.
+    $prevEap = $ErrorActionPreference; $ErrorActionPreference = 'Continue'
+    gh release view $tag -R $Repo 2>&1 | Out-Null
+    $releaseExists = ($LASTEXITCODE -eq 0)
+    $ErrorActionPreference = $prevEap
+    if (-not $releaseExists) {
         $extra = @()
         if ($Testing) { $extra += "--prerelease"; $extra += "--latest=false" }
         gh release create $tag -R $Repo "$zipFull#Dalamud install package" "$sums#SHA-256 checksums" --title "히메짱 옷장 정리기 $Version$(if ($Testing) { " (테스트)" })" --notes-file $notesFile @extra
