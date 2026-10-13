@@ -16,6 +16,7 @@ internal static class HimechanMain
 	public const string StatusCommand = "/히메짱상태";
 	public const string RaiseCommand = "/히메짱레이즈";
 	public const string SolaceCommand = "/히메짱백합";
+	public const string AquaveilCommand = "/히메짱물장";
 
 	private static WindowSystem? _windowSystem;
 	private static HimechanWindow? _window;
@@ -59,6 +60,11 @@ internal static class HimechanMain
 				HelpMessage = "다음 GCD에 위로의 마음을 한 번 요청합니다 (아군 대상 / HP가 가장 낮은 파티원 / 전원 만피면 황홀한 마음).",
 				ShowInHelp = true,
 			});
+			_ = Svc.Commands.AddHandler(AquaveilCommand, new CommandInfo(OnAquaveilCommand)
+			{
+				HelpMessage = "물의 장막을 한 번 요청합니다 (아군 대상 / 적·무대상이면 스탠스를 켠 탱커). 다음 안전한 위빙 틈에 사용합니다.",
+				ShowInHelp = true,
+			});
 
 			Svc.Framework.Update += OnFrameworkUpdate;
 			_initialized = true;
@@ -84,6 +90,7 @@ internal static class HimechanMain
 			_ = Svc.Commands.RemoveHandler(StatusCommand);
 			_ = Svc.Commands.RemoveHandler(RaiseCommand);
 			_ = Svc.Commands.RemoveHandler(SolaceCommand);
+			_ = Svc.Commands.RemoveHandler(AquaveilCommand);
 			HimechanHooks.Dispose();
 			HimechanLog.Dispose();
 			if (_windowSystem != null)
@@ -198,5 +205,10 @@ internal static class HimechanMain
 	private static void OnSolaceCommand(string command, string arguments)
 	{
 		RequireHimechan()?.HandleSolaceCommand();
+	}
+
+	private static void OnAquaveilCommand(string command, string arguments)
+	{
+		RequireHimechan()?.HandleAquaveilCommand();
 	}
 }

@@ -127,13 +127,17 @@ internal static class WHMHimechanPolicy
 	}
 	#endregion
 
-	#region Manual oGCD defer (rev26 F3, spec #19)
-	/// <summary>Emergency actions never deferred: Benediction, Rescue. Tetragrammaton (3570) is an automatic action and is not exempt (rev30).</summary>
-	internal static bool IsDeferExempt(uint adjustedId) => adjustedId is 140 or 7571
-		// Ground-targeted (Asylum, Liturgy of the Bell): the position cannot be replayed.
-		or 3569 or 25862;
+	#region Single-weave queue (spec #32, replaces #19)
+	/// <summary>Emergency actions never queued: Benediction (140), Rescue (7571). Ground-targeted actions are queued only with a valid target (macro &lt;me&gt; etc.).</summary>
+	internal static bool IsWeaveQueueExempt(uint adjustedId) => adjustedId is 140 or 7571;
 
-	internal const double DeferExpireAfterWindow = 5.0;
+	/// <summary>A stored press is dropped when it could not be replayed within this many seconds (about two GCD cycles).</summary>
+	internal const double WeaveQueueLifetime = 6.0;
+	internal const int WeaveQueueMax = 4;
+
+	/// <summary>Manual tail threshold: a press with 0 &lt; remaining GCD &lt;= this value is pushed to the next gap.</summary>
+	internal static float ManualTail(float configured) =>
+		float.IsFinite(configured) ? Math.Clamp(configured, 0.5f, 1.2f) : 0.75f;
 	#endregion
 
 	#region Solace request (rev25-29 F2, spec #15)
@@ -150,9 +154,8 @@ internal static class WHMHimechanPolicy
 		hp < bestHp || (hp <= bestHp && role < bestRole);
 	#endregion
 
-	#region High-end Aquaveil (rev30 F4, spec #12)
+	#region Aquaveil request (spec #31; the automatic #12 logic was rolled back 2026-10-13)
 	internal const uint AquaveilStatus = 2708;
-	internal const float AquaveilCastWindow = 5f;
 	#endregion
 }
 

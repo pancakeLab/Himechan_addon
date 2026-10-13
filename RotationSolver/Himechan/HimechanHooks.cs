@@ -65,6 +65,7 @@ internal static class HimechanHooks
 				// rev24 hooked CancelState / the OFF commands; watching the state covers every OFF path.
 				stopped.StopManualRaise("RSR 종료");
 				stopped.StopOpener("RSR 종료");
+				stopped.ClearWeaveQueue("RSR 종료");
 			}
 			_lastState = state;
 
@@ -100,7 +101,7 @@ internal static class HimechanHooks
 		}
 	}
 
-	/// <summary>HIMECHAN-HOOK ActionUpdater.UpdateNextAction: manual raise -> deferred replay -> Solace request -> opener.</summary>
+	/// <summary>HIMECHAN-HOOK ActionUpdater.UpdateNextAction: manual raise -> weave queue replay -> Solace request -> opener.</summary>
 	public static bool TryPriorityAction(ICustomRotation? rotation, out IAction? next, out IBaseAction? gcd)
 	{
 		next = null;
@@ -118,7 +119,7 @@ internal static class HimechanHooks
 				return true;
 			}
 
-			if (whm.TryDeferredReplay())
+			if (whm.TryReplayQueued())
 			{
 				next = null;
 				gcd = null;
@@ -146,7 +147,7 @@ internal static class HimechanHooks
 		return false;
 	}
 
-	/// <summary>HIMECHAN-HOOK ActionQueueManager.UseActionDetour: true = reject this input (opener protection, #18, #19).</summary>
+	/// <summary>HIMECHAN-HOOK ActionQueueManager.UseActionDetour: true = reject this input (opener protection, #18, weave queue #32).</summary>
 	public static bool ShouldRejectInput(uint actionType, uint actionId, ulong targetObjectId, uint useType)
 	{
 		try
@@ -167,7 +168,7 @@ internal static class HimechanHooks
 				return true;
 			}
 
-			return whm.ShouldDeferManualAbility(actionType, actionId, targetObjectId, useType);
+			return whm.OnPlayerAbilityInput(actionType, actionId, targetObjectId, useType);
 		}
 		catch (Exception ex)
 		{

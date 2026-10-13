@@ -25,6 +25,7 @@ public sealed partial class WHM_Himechan
 	private uint _pendingRaisePrep;
 	private DateTime _prepDeadline;
 	private DateTime _swiftDeadline;
+	private double _raiseGapUntil; // Thin Air went out in the current GCD gap: Swiftcast follows at once (intended double weave)
 
 	internal string ManualRaiseStatus { get; private set; } = "대기";
 
@@ -74,6 +75,7 @@ public sealed partial class WHM_Himechan
 		_raiseStage = 0;
 		_pendingRaisePrep = 0;
 		_swiftDeadline = DateTime.MinValue;
+		_raiseGapUntil = 0;
 		_raiseRequestDeadline = DateTime.UtcNow.AddSeconds(WHMHimechanPolicy.RequestTimeout(ManualRaiseRequestTimeout));
 		_submittedRaiseTarget = 0;
 		_raiseWaitUntil = DateTime.MinValue;
@@ -297,7 +299,7 @@ public sealed partial class WHM_Himechan
 			if (_raiseStage < 2)
 			{
 				ManualRaiseStatus = _raiseStage == 0 ? "실바람 위빙 대기" : "신속마 위빙 대기";
-				if (!WHMHimechanPolicy.RaiseCanWeave(DataCenter.DefaultGCDRemain, DataCenter.AnimationLock))
+				if (!RaisePrepWeaveOk())
 				{
 					return true;
 				}
@@ -385,6 +387,20 @@ public sealed partial class WHM_Himechan
 			return (!DataCenter.IsMoving || HasSwift) && (action as IBaseAction)?.Target.Target?.GameObjectId == _raiseTarget;
 		}
 
+		return RaisePrepWeaveOk();
+	}
+
+	/// <summary>
+	/// Thin Air: never at the tail of a running GCD (prepare at idle if the window was missed). Swiftcast right after Thin Air
+	/// in the same gap: only the animation lock matters (user decision 2026-10-13: the raise pair is the one intended double weave).
+	/// </summary>
+	private bool RaisePrepWeaveOk()
+	{
+		if (_raiseStage == 1 && Now < _raiseGapUntil)
+		{
+			return DataCenter.AnimationLock <= 0f && Player?.IsCasting != true;
+		}
+
 		return WHMHimechanPolicy.RaiseCanWeave(DataCenter.DefaultGCDRemain, DataCenter.AnimationLock);
 	}
 
@@ -399,6 +415,10 @@ public sealed partial class WHM_Himechan
 		{
 			// Advance on accepted execution, never on mere CanUse evaluation.
 			_raiseStage = id == (uint)ActionID.ThinAirPvE ? 1 : 2;
+			if (id == (uint)ActionID.ThinAirPvE)
+			{
+				_raiseGapUntil = Now + DataCenter.DefaultGCDRemain;
+			}
 			_pendingRaisePrep = id;
 			_prepDeadline = DateTime.UtcNow.AddSeconds(2);
 			if (id == (uint)ActionID.SwiftcastPvE)

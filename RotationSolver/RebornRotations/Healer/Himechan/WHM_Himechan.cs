@@ -152,11 +152,6 @@ public sealed partial class WHM_Himechan : WhiteMageRotation
 
 	private bool EmergencyAbilityCore(IAction nextGCD, out IAction? act)
 	{
-		if (TryTankbusterAquaveil(nextGCD, out act))
-		{
-			return true;
-		}
-
 		if (TryUseLastTetragrammatonForEmergency(out act))
 		{
 			return true;
@@ -245,8 +240,8 @@ public sealed partial class WHM_Himechan : WhiteMageRotation
 
 	protected override bool DefenseSingleAbility(IAction nextGCD, out IAction? act)
 	{
-		// Aquaveil is used only by Himechan's tankbuster logic (TryTankbusterAquaveil in EmergencyAbility),
-		// never by RSR's generic single-target defense trigger (user request 2026-10-08: no "on cooldown" use).
+		// Aquaveil is never used automatically (user decisions 2026-10-08 / 2026-10-13): only through /히메짱물장
+		// (HandleAquaveilCommand). RSR's generic single-target defense trigger must not use it "on cooldown".
 		// Divine Benison keeps its own policy in GeneralAbility.
 		act = null;
 		return false;
@@ -562,6 +557,7 @@ public sealed partial class WHM_Himechan : WhiteMageRotation
 		base.DisplayBaseStatus();
 		ImGui.Text($"히메짱 {HimechanMain.VersionText} | 오프너: {_openerStatus} | 실제 GCD: {GlareIiiPvE.Cooldown.RecastTimeOneChargeRaw:F2}s");
 		ImGui.Text($"수동 부활: {ManualRaiseStatus} | 테스트 모드: {(HimechanTanks.TestModeActive ? "동작" : "꺼짐")}");
+		ImGui.Text($"위빙 큐: {WeaveQueueText} | 이번 틈: {(WeaveSlotFree ? "비어 있음" : "사용됨")}");
 		ImGui.Text($"백합 충전까지: {LilyTime + DataCenter.DefaultGCDRemain:F2}s | 재시도 {LilyRetryEnd:F1}..{LilyOvercapWindow:F1}s | 일반 GCD 회복: {GCDHeal}");
 		ImGui.Text($"BMR: {BMRActive} | 타임라인 TB: {DataCenter.BMRDebugTimelineTankbuster} | 종합 TB: {BMRTankbusterIn}");
 		ImGui.Text($"이동: {DataCenter.MovingRaw:F2}/{MovementSwiftcastThreshold:F1}s");

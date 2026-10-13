@@ -31,6 +31,12 @@ public sealed partial class WHM_Himechan
 			return false;
 		}
 
+		// #32 single weave: one ability per GCD gap, and queued player inputs go before automation.
+		if (InCombat && WeaveQueueActive && (!WeaveSlotFree || WeaveQueueCount > 0))
+		{
+			return false;
+		}
+
 		if (!picker(nextGCD, out act))
 		{
 			return false;
@@ -82,13 +88,29 @@ public sealed partial class WHM_Himechan
 	/// <summary>Execution-time recheck (DoAction) of an ability this rotation picked; explicit commands, opener and raise keep their own rules.</summary>
 	internal bool ValidateMaintenanceAction(IAction? action)
 	{
-		if (action == null || !ReferenceEquals(action, _gatedPick))
+		if (action == null || OpenerOwnsInput || _manualRaise || !InCombat)
 		{
 			return true;
 		}
 
-		if (OpenerOwnsInput || _manualRaise || !InCombat
-			|| ReferenceEquals(DataCenter.CommandNextAction, action))
+		// #32: no RSR path (rotation pick, RSR's own picks such as Surecast, RSR command queue) may put a second ability
+		// into a gap that already holds one; an RSR command ability also obeys the weave budget instead of RSR's 0.5s rule.
+		if (WeaveQueueActive && action is IBaseAction ability && ability.Info.IsAbility)
+		{
+			if (!WeaveSlotFree)
+			{
+				return false;
+			}
+
+			if (ReferenceEquals(DataCenter.CommandNextAction, action) && !ReferenceEquals(action, _gatedPick)
+				&& DataCenter.DefaultGCDRemain > 0f && !MaintenanceWeaveSafe())
+			{
+				LogWeaveDefer(RotationSolver.Updaters.ActionUpdater.NextGCDAction);
+				return false;
+			}
+		}
+
+		if (!ReferenceEquals(action, _gatedPick) || ReferenceEquals(DataCenter.CommandNextAction, action))
 		{
 			return true;
 		}

@@ -96,7 +96,7 @@ internal sealed class HimechanWindow : Window
 			settings.TestMode = test;
 			if (test)
 			{
-				HimechanProfile.Notify("테스트 모드를 켰습니다. 파티에 다른 플레이어가 없을 때만 탱커 대상 기능(오프너 탱커·물의 장막·신성한 축복)이 나를 대상으로 동작합니다. 게임을 다시 시작하면 꺼집니다.");
+				HimechanProfile.Notify("테스트 모드를 켰습니다. 파티에 다른 플레이어가 없을 때만 탱커 대상 기능(오프너 탱커·물의 장막 요청·신성한 축복)이 나를 대상으로 동작합니다. 게임을 다시 시작하면 꺼집니다.");
 			}
 		}
 		ImGui.TextWrapped(HimechanTanks.TestModeActive
