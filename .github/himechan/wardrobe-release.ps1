@@ -91,7 +91,8 @@ $entry = [ordered]@{
 $all = @()
 $existing = $null
 if (Test-Path $PluginmasterPath) {
-    $parsed = @(Get-Content $PluginmasterPath -Raw -Encoding UTF8 | ConvertFrom-Json)
+    # ForEach-Object unrolls the array: Windows PowerShell 5.1 ConvertFrom-Json emits a JSON array as ONE object.
+    $parsed = @((Get-Content $PluginmasterPath -Raw -Encoding UTF8 | ConvertFrom-Json) | ForEach-Object { $_ })
     $all = @($parsed | Where-Object { $_.InternalName -ne 'KRWardrobeCleaner' })
     $existing = $parsed | Where-Object { $_.InternalName -eq 'KRWardrobeCleaner' } | Select-Object -First 1
 }
