@@ -45,6 +45,12 @@ $entry = [ordered]@{
     DownloadCount          = 0
 }
 
-$json = ConvertTo-Json @($entry) -Depth 5
+# HIMECHAN: this file is shared with other pancakeLab plugins (KRWardrobeCleaner, see wardrobe-release.ps1).
+# Keep every entry whose InternalName is not ours; ours always comes first.
+$others = @()
+if (Test-Path $OutPath) {
+    $others = @((Get-Content $OutPath -Raw -Encoding UTF8 | ConvertFrom-Json) | Where-Object { $_.InternalName -ne $m.InternalName })
+}
+$json = ConvertTo-Json @(@($entry) + $others) -Depth 5
 [IO.File]::WriteAllText($OutPath, $json + "`n", [Text.UTF8Encoding]::new($false))
 "wrote $OutPath ($Version, download $download)"
