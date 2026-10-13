@@ -168,6 +168,11 @@ internal static class HimechanHooks
 				return true;
 			}
 
+			if (whm.TryRedirectAttackInput(actionType, actionId, targetObjectId, useType))
+			{
+				return true; // #33: re-issued on an enemy (or dropped when none is around)
+			}
+
 			return whm.OnPlayerAbilityInput(actionType, actionId, targetObjectId, useType);
 		}
 		catch (Exception ex)
@@ -300,6 +305,7 @@ internal static class HimechanHooks
 
 			var id = set.Action.Value.RowId;
 			whm.ManualRaiseEffect(id, set.Target?.GameObjectId ?? 0);
+			whm.AttackEffect(id, set.Target);
 
 			// The native effect-header action kind is one byte; ECommons' field reads four (flags/target count included).
 			var isAction = unchecked((byte)set.Header.ActionType) == 1;
