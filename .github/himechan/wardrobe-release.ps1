@@ -9,7 +9,8 @@ param(
     [string]$Notes = '',                                     # release notes / Changelog (Korean)
     [string]$Repo = 'pancakeLab/KRWardrobeCleaner',          # public distribution repo (releases only)
     [string]$PluginmasterPath = 'pluginmaster.json',
-    [switch]$SkipRelease                                     # only rewrite pluginmaster.json (release already exists)
+    [switch]$SkipRelease,                                    # only rewrite pluginmaster.json (release already exists)
+    [switch]$Testing                                         # publish as a Dalamud testing build (prerelease); stable fields stay as they are
 )
 
 $ErrorActionPreference = 'Stop'
@@ -45,7 +46,9 @@ if (-not $SkipRelease) {
     [IO.File]::WriteAllText($notesFile, $changelog + "`n", [Text.UTF8Encoding]::new($false))
     gh release view $tag -R $Repo *> $null
     if ($LASTEXITCODE -ne 0) {
-        gh release create $tag -R $Repo "$zipFull#Dalamud install package" "$sums#SHA-256 checksums" --title "히메짱 옷장 정리기 $Version" --notes-file $notesFile
+        $extra = @()
+        if ($Testing) { $extra += "--prerelease"; $extra += "--latest=false" }
+        gh release create $tag -R $Repo "$zipFull#Dalamud install package" "$sums#SHA-256 checksums" --title "히메짱 옷장 정리기 $Version$(if ($Testing) { " (테스트)" })" --notes-file $notesFile @extra
     } else {
         gh release upload $tag -R $Repo "$zipFull#Dalamud install package" "$sums#SHA-256 checksums" --clobber
     }
@@ -82,8 +85,18 @@ $entry = [ordered]@{
 }
 
 $all = @()
+$existing = $null
 if (Test-Path $PluginmasterPath) {
-    $all = @((Get-Content $PluginmasterPath -Raw -Encoding UTF8 | ConvertFrom-Json) | Where-Object { $_.InternalName -ne 'KRWardrobeCleaner' })
+    $parsed = @(Get-Content $PluginmasterPath -Raw -Encoding UTF8 | ConvertFrom-Json)
+    $all = @($parsed | Where-Object { $_.InternalName -ne 'KRWardrobeCleaner' })
+    $existing = $parsed | Where-Object { $_.InternalName -eq 'KRWardrobeCleaner' } | Select-Object -First 1
+}
+if ($Testing -and $existing) {
+    # Keep the stable channel untouched; only the testing channel points at the new build.
+    $entry.AssemblyVersion     = $existing.AssemblyVersion
+    $entry.DownloadLinkInstall = $existing.DownloadLinkInstall
+    $entry.DownloadLinkUpdate  = $existing.DownloadLinkUpdate
+    $entry.Changelog           = "테스트 빌드 $Version (안정판 $($existing.AssemblyVersion))`n`n" + $changelog
 }
 $json = ConvertTo-Json @($all + @($entry)) -Depth 5
 [IO.File]::WriteAllText($PluginmasterPath, $json + "`n", [Text.UTF8Encoding]::new($false))
