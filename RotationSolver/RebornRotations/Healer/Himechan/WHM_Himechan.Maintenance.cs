@@ -102,11 +102,21 @@ public sealed partial class WHM_Himechan
 				return false;
 			}
 
-			if (ReferenceEquals(DataCenter.CommandNextAction, action) && !ReferenceEquals(action, _gatedPick)
-				&& DataCenter.DefaultGCDRemain > 0f && !MaintenanceWeaveSafe())
+			if (ReferenceEquals(DataCenter.CommandNextAction, action) && !ReferenceEquals(action, _gatedPick))
 			{
-				LogWeaveDefer(RotationSolver.Updaters.ActionUpdater.NextGCDAction);
-				return false;
+				// /rsr DoActions: a player request, so it follows the player's tail threshold (not the automatic budget)
+				// and the queue priority order (#32).
+				if (QueueOutranksCommand(action))
+				{
+					return false;
+				}
+
+				var remain = DataCenter.DefaultGCDRemain;
+				if (remain > 0f && (Player?.IsCasting == true || !ManualWeaveFits(remain)))
+				{
+					LogWeaveDefer(RotationSolver.Updaters.ActionUpdater.NextGCDAction);
+					return false;
+				}
 			}
 		}
 

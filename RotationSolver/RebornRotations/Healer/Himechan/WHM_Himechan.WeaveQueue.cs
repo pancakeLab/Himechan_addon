@@ -22,8 +22,110 @@ public sealed partial class WHM_Himechan
 	[RotationConfig(CombatType.PvE, Name = "거룩한 축복은 위빙 큐를 거치지 않고 즉시 사용 (끄면 다른 능력처럼 틈에 맞춰 사용)", Parent = nameof(SingleWeaveQueue), ParentValue = true)]
 	public bool BenedictionBypassesQueue { get; set; } = true;
 
-	[RotationConfig(CombatType.PvE, Name = "구조는 위빙 큐를 거치지 않고 즉시 사용 (끄면 다른 능력처럼 틈에 맞춰 사용)", Parent = nameof(SingleWeaveQueue), ParentValue = true)]
+	[RotationConfig(CombatType.PvE, Name = "구출은 위빙 큐를 거치지 않고 즉시 사용 (끄면 다른 능력처럼 틈에 맞춰 사용)", Parent = nameof(SingleWeaveQueue), ParentValue = true)]
 	public bool RescueBypassesQueue { get; set; } = true;
+
+	// User order 2026-10-13 (the manual raise request always goes first through its own path).
+	[RotationConfig(CombatType.PvE, Name = "위빙 큐 우선순위 (쉼표 구분, 앞이 먼저. 기술 이름 또는 ID. 목록에 없는 기술은 맨 뒤, 같은 순위는 누른 순서)", Parent = nameof(SingleWeaveQueue), ParentValue = true,
+		Tooltip = "여러 능력이 동시에 대기 중일 때 이 순서로 사용합니다. /rsr DoActions 로 넣은 능력도 같은 순위표로 비교합니다. 이름은 게임 클라이언트 언어의 기술 이름(한섭이면 한국어)이며, ID(예: 3569)도 됩니다. 수동 부활 요청(/히메짱레이즈)은 항상 가장 먼저입니다.")]
+	public string WeaveQueuePriority { get; set; } = "쾌속의 마법, 에테르 전이, 견고한 마법, 구출, 전력 질주, 거룩한 축복, 절제, 심판, 대사면, 성소, 예배종, 신의 이름, 물의 장막, 신성한 축복, 실바람, 신성한 손길";
+
+	private string? _priorityText;
+	private Dictionary<uint, int> _priorityRank = [];
+
+	/// <summary>Rank of an action in the priority list (0 = first); int.MaxValue when not listed.</summary>
+	private int WeaveRank(uint adjustedId)
+	{
+		var text = WeaveQueuePriority;
+		if (!string.Equals(text, _priorityText, StringComparison.Ordinal))
+		{
+			_priorityRank = ParsePriority(text);
+			_priorityText = text;
+		}
+		return _priorityRank.TryGetValue(adjustedId, out var rank) ? rank : int.MaxValue;
+	}
+
+	private static Dictionary<uint, int> ParsePriority(string? text)
+	{
+		Dictionary<uint, int> result = [];
+		if (string.IsNullOrWhiteSpace(text))
+		{
+			return result;
+		}
+
+		var tokens = text.Split([',', ';', '
+', ''], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+		Dictionary<string, int> byName = new(StringComparer.OrdinalIgnoreCase);
+		for (var i = 0; i < tokens.Length; i++)
+		{
+			if (uint.TryParse(tokens[i], out var id))
+			{
+				_ = result.TryAdd(id, i);
+			}
+			else
+			{
+				_ = byName.TryAdd(tokens[i], i);
+			}
+		}
+
+		if (byName.Count > 0)
+		{
+			try
+			{
+				foreach (var row in Service.GetSheet<LuminaAction>())
+				{
+					if (row.IsPvP || row.ActionCategory.RowId != (uint)ActionCate.Ability)
+					{
+						continue;
+					}
+
+					var name = row.Name.ExtractText();
+					if (name.Length > 0 && byName.TryGetValue(name, out var rank))
+					{
+						_ = result.TryAdd(row.RowId, rank);
+					}
+				}
+			}
+			catch (Exception ex)
+			{
+				ECommons.Logging.PluginLog.Warning($"[Himechan] Priority name lookup failed: {ex.Message}");
+			}
+		}
+
+		return result;
+	}
+
+	/// <summary>The queued entry to fire next: best rank, then press order.</summary>
+	private int SelectQueueHead()
+	{
+		var best = 0;
+		var bestRank = int.MaxValue;
+		for (var i = 0; i < _weaveQueue.Count; i++)
+		{
+			var rank = WeaveRank(Service.GetAdjustedActionId(_weaveQueue[i].Id));
+			if (i == 0 || rank < bestRank)
+			{
+				best = i;
+				bestRank = rank;
+			}
+		}
+		return best;
+	}
+
+	/// <summary>An ability RSR is about to use from its own command queue (/rsr DoActions) must wait while a higher-ranked entry waits here.</summary>
+	internal bool QueueOutranksCommand(IAction command)
+	{
+		if (_weaveQueue.Count == 0)
+		{
+			return false;
+		}
+
+		var commandRank = WeaveRank(command.AdjustedID);
+		return WeaveRank(Service.GetAdjustedActionId(_weaveQueue[SelectQueueHead()].Id)) < commandRank;
+	}
+
+	/// <summary>Tail rule for RSR command abilities and queue replays: the player's threshold, not the automatic budget.</summary>
+	internal bool ManualWeaveFits(float remain) => remain > WHMHimechanPolicy.ManualTail(ManualWeaveTail);
 
 	private sealed class QueuedAbility
 	{
@@ -189,14 +291,15 @@ public sealed partial class WHM_Himechan
 			return false;
 		}
 
-		var head = _weaveQueue[0];
+		var headIndex = SelectQueueHead();
+		var head = _weaveQueue[headIndex];
 		IBattleChara? target = null;
 		if (head.Target != 0 && head.Target != 0xE0000000)
 		{
 			target = Svc.Objects.SearchById(head.Target) as IBattleChara;
 			if (target == null || (target.IsDead && !head.GroundTarget))
 			{
-				DropQueued(0, "대상 없음");
+				DropQueued(headIndex, "대상 없음");
 				return false;
 			}
 		}
@@ -208,9 +311,16 @@ public sealed partial class WHM_Himechan
 			return false;
 		}
 
-		// Room in this gap, or the GCD is idle and RSR has nothing to cast (downtime): otherwise let the GCD go first.
+		// An RSR command ability (/rsr DoActions) with a better rank goes first.
+		if (DataCenter.CommandNextAction is IBaseAction command && command.Info.IsAbility
+			&& WeaveRank(command.AdjustedID) < WeaveRank(Service.GetAdjustedActionId(head.Id)))
+		{
+			return false;
+		}
+
+		// Room in this gap (player threshold), or the GCD is idle and RSR has nothing to cast (downtime): otherwise let the GCD go first.
 		var remain = DataCenter.DefaultGCDRemain;
-		var fits = remain > WHMHimechanPolicy.WeaveBudget(ActionManagerEx.Instance.GetAnimationLockDelayEstimate());
+		var fits = ManualWeaveFits(remain);
 		var idle = remain <= DataCenter.CalculatedActionAhead && (!InCombat || ActionUpdater.NextGCDAction == null);
 		if (!fits && !idle)
 		{
@@ -246,7 +356,7 @@ public sealed partial class WHM_Himechan
 			_weaveReplaying = false;
 		}
 
-		_weaveQueue.RemoveAt(0);
+		_weaveQueue.RemoveAt(headIndex);
 		if (!ok)
 		{
 			RecordHimechanDiagnostic($"WEAVE Q REJECTED {head.Label}({head.Id})");
