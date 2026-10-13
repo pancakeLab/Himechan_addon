@@ -3,8 +3,8 @@
     "Author": "pancakeLab (비공식 포크) / 원본: pancakeLab (비공식 포크) / 원본: The Combat Reborn Team",
     "Name": "Rotation Solver Reborn - 히메짱 WHM",
     "InternalName": "RotationSolver",
-    "AssemblyVersion": "7.5.6.2402",
-    "TestingAssemblyVersion": "7.5.6.2402",
+    "AssemblyVersion": "7.5.6.2403",
+    "TestingAssemblyVersion": "7.5.6.2403",
     "Description": "Rotation Solver Reborn(RSR)의 비공식 소스 포크입니다. 원본 RSR 전체에 백마도사 전용 로테이션 '히메짱 WHM'과 한국어 설정 창이 추가되어 있습니다.\n\n공식 RSR과 내부 이름이 같아 동시에 설치할 수 없습니다. 공식 RSR을 제거한 뒤 설치하세요. 기존 RSR 설정은 그대로 유지됩니다.\n\n원본 기준: RSR 7.5.6.24",
     "Punchline": "RSR 비공식 포크 + 히메짱 WHM 로테이션 (원본 7.5.6.24 기준)",
     "ApplicableVersion": "any",
@@ -33,11 +33,11 @@
     "IsHide": false,
     "IconUrl": "https://raw.githubusercontent.com/pancakeLab/Himechan_addon/himechan/.github/himechan/icon.png",
     "AcceptsFeedback": false,
-    "DownloadLinkInstall": "https://github.com/pancakeLab/Himechan_addon/releases/download/7.5.6.2402/latest.zip",
-    "DownloadLinkUpdate": "https://github.com/pancakeLab/Himechan_addon/releases/download/7.5.6.2402/latest.zip",
-    "DownloadLinkTesting": "https://github.com/pancakeLab/Himechan_addon/releases/download/7.5.6.2402/latest.zip",
-    "Changelog": "히메짱 WHM 포크 7.5.6.2402\n\n- 원본 RSR: 7.5.6.24 (https://github.com/FFXIV-CombatReborn/RotationSolverReborn/releases/tag/7.5.6.24)\n- 포크 커밋: 7358b59e\n- latest.zip SHA256: 83C80BF0D9BC871F39EF240C56617C87C8205FAF9881E0B3D6173C250E2348BE",
-    "LastUpdate": 1791875914,
+    "DownloadLinkInstall": "https://github.com/pancakeLab/Himechan_addon/releases/download/7.5.6.2403/latest.zip",
+    "DownloadLinkUpdate": "https://github.com/pancakeLab/Himechan_addon/releases/download/7.5.6.2403/latest.zip",
+    "DownloadLinkTesting": "https://github.com/pancakeLab/Himechan_addon/releases/download/7.5.6.2403/latest.zip",
+    "Changelog": "히메짱 WHM 포크 7.5.6.2403\n\n- 원본 RSR: 7.5.6.24 (https://github.com/FFXIV-CombatReborn/RotationSolverReborn/releases/tag/7.5.6.24)\n- 포크 커밋: b91ae05d\n- latest.zip SHA256: 1E9715ACB0C13363BE5D77018FC6623EDFC066C9E62F5D51CD8290B3882EC180",
+    "LastUpdate": 1791878518,
     "DownloadCount": 0
   }
 ]
