@@ -53,8 +53,7 @@ public sealed partial class WHM_Himechan
 			return result;
 		}
 
-		var tokens = text.Split([',', ';', '
-', ''], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+		var tokens = text.Split([',', ';', '\n', '\r'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
 		Dictionary<string, int> byName = new(StringComparer.OrdinalIgnoreCase);
 		for (var i = 0; i < tokens.Length; i++)
 		{
