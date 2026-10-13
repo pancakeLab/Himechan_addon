@@ -128,8 +128,9 @@ internal static class WHMHimechanPolicy
 	#endregion
 
 	#region Single-weave queue (spec #32, replaces #19)
-	/// <summary>Emergency actions never queued: Benediction (140), Rescue (7571). Ground-targeted actions are queued only with a valid target (macro &lt;me&gt; etc.).</summary>
-	internal static bool IsWeaveQueueExempt(uint adjustedId) => adjustedId is 140 or 7571;
+	/// <summary>Emergency actions that may bypass the queue (per-option, default on): Benediction, Rescue. Ground-targeted actions are queued only with a valid target (macro &lt;me&gt; etc.).</summary>
+	internal const uint BenedictionId = 140;
+	internal const uint RescueId = 7571;
 
 	/// <summary>A stored press is dropped when it could not be replayed within this many seconds (about two GCD cycles).</summary>
 	internal const double WeaveQueueLifetime = 6.0;

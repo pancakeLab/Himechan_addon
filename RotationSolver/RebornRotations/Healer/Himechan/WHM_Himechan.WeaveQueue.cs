@@ -19,6 +19,12 @@ public sealed partial class WHM_Himechan
 		Tooltip = "능력의 선모션(애니메이션 잠금 약 0.6초)에 서버 지연을 더한 값입니다. 자동 능력은 더 보수적인 공통 위빙 예산(0.85초 이상)을 그대로 씁니다.")]
 	public float ManualWeaveTail { get; set; } = 0.75f;
 
+	[RotationConfig(CombatType.PvE, Name = "거룩한 축복은 위빙 큐를 거치지 않고 즉시 사용 (끄면 다른 능력처럼 틈에 맞춰 사용)", Parent = nameof(SingleWeaveQueue), ParentValue = true)]
+	public bool BenedictionBypassesQueue { get; set; } = true;
+
+	[RotationConfig(CombatType.PvE, Name = "구조는 위빙 큐를 거치지 않고 즉시 사용 (끄면 다른 능력처럼 틈에 맞춰 사용)", Parent = nameof(SingleWeaveQueue), ParentValue = true)]
+	public bool RescueBypassesQueue { get; set; } = true;
+
 	private sealed class QueuedAbility
 	{
 		public uint Id;
@@ -66,7 +72,7 @@ public sealed partial class WHM_Himechan
 	/// <summary>
 	/// UseActionDetour: a hotbar / macro ability press. Passes through when it fits the current gap (and marks the gap used);
 	/// otherwise it is stored (in order, latest after the others) and rejected, to be replayed in the next safe gap.
-	/// Benediction and Rescue always pass (emergency); ground placement by cursor cannot be replayed and always passes.
+	/// Benediction / Rescue pass at once when their bypass option is on (default); ground placement by cursor cannot be replayed and always passes.
 	/// </summary>
 	internal bool OnPlayerAbilityInput(uint actionType, uint actionId, ulong targetObjectId, uint useType)
 	{
@@ -85,7 +91,9 @@ public sealed partial class WHM_Himechan
 			}
 
 			var validTarget = targetObjectId != 0 && targetObjectId != 0xE0000000;
-			if (WHMHimechanPolicy.IsWeaveQueueExempt(adjusted) || (groundTarget && !validTarget))
+			var exempt = (adjusted == WHMHimechanPolicy.BenedictionId && BenedictionBypassesQueue)
+				|| (adjusted == WHMHimechanPolicy.RescueId && RescueBypassesQueue);
+			if (exempt || (groundTarget && !validTarget))
 			{
 				MarkWeaveUsed("player-exempt", adjusted);
 				return false;
