@@ -181,9 +181,10 @@ public sealed partial class WHM_Himechan
 		if (RotationSolver.Updaters.ActionUpdater.NextAction is IBaseAction auto && auto.Info.IsAbility
 			&& !ReferenceEquals(auto, DataCenter.CommandNextAction))
 		{
-			list.Add(new HudEntry(auto.AdjustedID, false, 0, auto.Name, "자동", true));
+			list.Add(new HudEntry(auto.AdjustedID, false, 0, auto.Name, "자동", false));
 		}
 
+		HudAppendAbilityExtras(list);
 		return list;
 	}
 

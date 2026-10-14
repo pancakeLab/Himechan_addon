@@ -1,29 +1,114 @@
+using FFXIVClientStructs.FFXIV.Client.Game;
+using LuminaAction = Lumina.Excel.Sheets.Action;
+
 namespace RotationSolver.RebornRotations.Healer;
 
 // #34 HUD data (2026-10-14): what the overlay shows for the GCD side. The oGCD side comes from the weave queue (HudQueueEntries).
+// In RSR's manual mode the player casts the attack GCDs, so the "next GCD" must come from the player's own cast and the
+// game's input queue as well as from RSR (game test 2026-10-14: the centre stayed empty except for the Dia refresh).
 public sealed partial class WHM_Himechan
 {
-	/// <summary>Reserved GCDs after RSR's next GCD: the RSR command GCD (/rsr DoActions) and the Solace request.</summary>
-	internal List<HudEntry> HudReservedGcds()
+	// The first automatic ability candidate that the weave gate held back this frame (preview evaluation), for the HUD only.
+	private IAction? _hudAutoCandidate;
+
+	internal void HudResetFrame() => _hudAutoCandidate = null;
+
+	internal void HudRememberCandidate(IAction? candidate)
+	{
+		if (candidate != null && _hudAutoCandidate == null)
+		{
+			_hudAutoCandidate = candidate;
+		}
+	}
+
+	/// <summary>Centre of the ring: the GCD being cast right now (player or RSR), otherwise RSR's planned next GCD.</summary>
+	internal unsafe HudEntry? HudCenterGcd()
+	{
+		var player = Player;
+		if (player != null && player.IsCasting && player.CastActionId != 0 && IsGcdActionId(player.CastActionId))
+		{
+			return new HudEntry(player.CastActionId, false, 0, ActionLabel(player.CastActionId), "시전", false);
+		}
+
+		var next = RotationSolver.Updaters.ActionUpdater.NextGCDAction;
+		return next != null ? new HudEntry(next.AdjustedID, false, 0, next.Name, "다음", false) : null;
+	}
+
+	/// <summary>Reserved GCDs after the centre: the game's own queued input, RSR's next GCD, the Solace request, the RSR command GCD.</summary>
+	internal unsafe List<HudEntry> HudReservedGcds(HudEntry? center)
 	{
 		List<HudEntry> list = [];
-		var next = RotationSolver.Updaters.ActionUpdater.NextGCDAction;
+		var centerId = center?.ActionId ?? 0;
 
-		if (DataCenter.CommandNextAction is IBaseAction command && command.Info.IsRealGCD && !ReferenceEquals(command, next))
+		var manager = ActionManager.Instance();
+		if (manager != null && manager->ActionQueued && manager->QueuedActionType == ActionType.Action)
 		{
-			list.Add(new HudEntry(command.AdjustedID, false, 0, command.Name, "명령", false));
+			var queued = Service.GetAdjustedActionId(manager->QueuedActionId);
+			if (queued != centerId && IsGcdActionId(queued))
+			{
+				list.Add(new HudEntry(queued, false, 0, ActionLabel(queued), "선입력", false));
+			}
+		}
+
+		var next = RotationSolver.Updaters.ActionUpdater.NextGCDAction;
+		if (next != null && next.AdjustedID != centerId && !Contains(list, next.AdjustedID))
+		{
+			list.Add(new HudEntry(next.AdjustedID, false, 0, next.Name, "다음", false));
 		}
 
 		if (_solaceRequest)
 		{
 			var solace = _solaceTarget != 0 ? AfflatusSolacePvE : AfflatusRapturePvE;
-			if (!ReferenceEquals(solace, next))
+			if (solace.AdjustedID != centerId && !Contains(list, solace.AdjustedID))
 			{
 				list.Add(new HudEntry(solace.AdjustedID, false, 0, solace.Name, "요청", false));
 			}
 		}
 
+		if (DataCenter.CommandNextAction is IBaseAction command && command.Info.IsRealGCD
+			&& command.AdjustedID != centerId && !Contains(list, command.AdjustedID))
+		{
+			list.Add(new HudEntry(command.AdjustedID, false, 0, command.Name, "명령", false));
+		}
+
 		return list;
+	}
+
+	/// <summary>Extra oGCD lines beyond the weave queue: the game's queued ability input and the held-back automatic candidate.</summary>
+	internal unsafe void HudAppendAbilityExtras(List<HudEntry> list)
+	{
+		var manager = ActionManager.Instance();
+		if (manager != null && manager->ActionQueued && manager->QueuedActionType == ActionType.Action)
+		{
+			var queued = Service.GetAdjustedActionId(manager->QueuedActionId);
+			if (!IsGcdActionId(queued) && !Contains(list, queued))
+			{
+				list.Add(new HudEntry(queued, false, 0, ActionLabel(queued), "선입력", false));
+			}
+		}
+
+		if (_hudAutoCandidate is IBaseAction candidate && candidate.Info.IsAbility && !Contains(list, candidate.AdjustedID))
+		{
+			list.Add(new HudEntry(candidate.AdjustedID, false, 0, candidate.Name, "자동 대기", true));
+		}
+	}
+
+	private static bool Contains(List<HudEntry> list, uint actionId)
+	{
+		foreach (var e in list)
+		{
+			if (!e.IsItem && e.ActionId == actionId)
+			{
+				return true;
+			}
+		}
+		return false;
+	}
+
+	private static bool IsGcdActionId(uint adjustedId)
+	{
+		var row = Service.GetSheet<LuminaAction>().GetRowOrDefault(adjustedId);
+		return row is { } action && action.ActionCategory.RowId is (uint)ActionCate.Spell or (uint)ActionCate.Weaponskill;
 	}
 
 	/// <summary>Text under the ring: gap usage for this GCD.</summary>

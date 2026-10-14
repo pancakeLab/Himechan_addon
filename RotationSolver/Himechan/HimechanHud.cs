@@ -131,10 +131,11 @@ internal sealed class HimechanHud : Window
 		}
 
 		var center = origin + new Vector2(leftWidth + 12f * s + ringBox * 0.5f, 6f * s + ringBox * 0.5f);
-		DrawRing(draw, center, s, whm, settings, font, fontSize, small);
+		var centerGcd = whm.HudCenterGcd();
+		DrawRing(draw, center, s, whm, settings, font, fontSize, small, centerGcd);
 
 		// Reserved GCDs (left, right-aligned toward the ring).
-		var reserved = whm.HudReservedGcds();
+		var reserved = whm.HudReservedGcds(centerGcd);
 		var rowY = center.Y - SmallIcon * 0.5f * s;
 		draw.AddText(font, small, new Vector2(origin.X + 6f * s, rowY - small - 2f * s), ColLabel, "예약 GCD");
 		var x = center.X - ringBox * 0.5f - 12f * s - SmallIcon * s;
@@ -164,7 +165,7 @@ internal sealed class HimechanHud : Window
 		SavePositionIfMoved(settings);
 	}
 
-	private static void DrawRing(ImDrawListPtr draw, Vector2 center, float s, WHM_Himechan whm, HimechanSettings settings, ImFontPtr font, float fontSize, float small)
+	private static void DrawRing(ImDrawListPtr draw, Vector2 center, float s, WHM_Himechan whm, HimechanSettings settings, ImFontPtr font, float fontSize, float small, WHM_Himechan.HudEntry? centerGcd)
 	{
 		var r = Ring * s;
 		var thick = RingThickness * s;
@@ -211,15 +212,19 @@ internal sealed class HimechanHud : Window
 			}
 		}
 
-		// Center: RSR's next GCD.
-		var next = ActionUpdater.NextGCDAction;
+		// Center: the GCD being cast (player or RSR), else RSR's next GCD.
 		var half = CenterIcon * 0.5f * s;
 		var min = center - new Vector2(half, half);
-		if (next != null && IconSet.GetTexture((ActionID)next.AdjustedID, out var tex))
+		if (centerGcd is { } cg && IconSet.GetTexture((ActionID)cg.ActionId, out var tex))
 		{
 			draw.AddImage(tex.Handle, min, center + new Vector2(half, half));
 		}
 		draw.AddRect(min, center + new Vector2(half, half), frameColor, 5f * s, ImDrawFlags.None, 2f * s);
+		if (centerGcd is { } badge)
+		{
+			var bsize = ImGui.CalcTextSize(badge.Badge) * 0.8f * s;
+			draw.AddText(font, small, new Vector2(center.X - bsize.X * 0.5f, center.Y - r - thick - small - 2f * s), ColLabel, badge.Badge);
+		}
 
 		// Time and gap text under the ring.
 		var timeText = remain > 0f ? $"{remain:F2}s" : "준비";

@@ -28,6 +28,7 @@ public sealed partial class WHM_Himechan
 		if (InCombat && !AutoAbilityWeaveOk(nextGCD))
 		{
 			LogWeaveDefer(nextGCD);
+			HudPreviewCandidate(nextGCD, picker);
 			return false;
 		}
 
@@ -36,6 +37,7 @@ public sealed partial class WHM_Himechan
 		if (InCombat && WeaveQueueActive
 			&& (!(WeaveSlotFree || (DoubleWeaveAutomation && WeaveSecondSlotFree)) || WeaveQueueCount > 0))
 		{
+			HudPreviewCandidate(nextGCD, picker);
 			return false;
 		}
 
@@ -49,6 +51,35 @@ public sealed partial class WHM_Himechan
 			_gatedPick = act;
 		}
 		return true;
+	}
+
+	/// <summary>
+	/// HUD only: when the gate holds automation back, evaluate the picker in preview mode (the same mode RSR uses for its
+	/// own action display) so the HUD can show which automatic ability is waiting for the next gap. Never selects anything.
+	/// </summary>
+	private void HudPreviewCandidate(IAction nextGCD, AbilityPicker picker)
+	{
+		if (_hudAutoCandidate != null || IBaseAction.ActionPreview || !RotationSolver.Himechan.HimechanSettings.Current.HudEnabled)
+		{
+			return;
+		}
+
+		IBaseAction.ActionPreview = true;
+		try
+		{
+			if (picker(nextGCD, out var candidate))
+			{
+				HudRememberCandidate(candidate);
+			}
+		}
+		catch (Exception ex)
+		{
+			ECommons.Logging.PluginLog.Debug($"[Himechan] HUD candidate preview failed: {ex.Message}");
+		}
+		finally
+		{
+			IBaseAction.ActionPreview = false;
+		}
 	}
 
 	/// <summary>

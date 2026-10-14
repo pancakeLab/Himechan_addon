@@ -531,6 +531,7 @@ public sealed partial class WHM_Himechan : WhiteMageRotation
 	protected override void UpdateInfo()
 	{
 		base.UpdateInfo();
+		HudResetFrame();
 		MigrateLegacyOpenerSettings();
 		if (!InCombat || DataCenter.CombatTimeRaw < _lastTrackedCombatTime)
 		{
