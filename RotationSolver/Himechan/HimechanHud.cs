@@ -23,6 +23,7 @@ internal sealed class HimechanHud : Window
 	private const float RingThickness = 7f;
 	private const float CenterIcon = 40f;
 	private const float SmallIcon = 34f;
+	private const float AbilityIcon = 22f; // oGCD slots at ~66% of the GCD boxes (user decision 2026-10-15)
 	private const float Gap = 4f;
 	private const int MaxReserved = 2; // user decision 2026-10-14: two reserved GCD boxes (the stack holds two)
 	private const int MaxQueue = 4; // user decision 2026-10-14 (was 5)
@@ -45,7 +46,6 @@ internal sealed class HimechanHud : Window
 	private static readonly uint ColGapGlow = Color(0.5f, 0.88f, 0.63f, 0.22f);
 	private static readonly uint ColStop = Color(1f, 0.55f, 0.25f, 1f);
 	private static readonly uint ColIntercept = Color(0.78f, 0.45f, 1f, 1f);
-	private static readonly uint ColTagText = Color(0.06f, 0.06f, 0.09f, 1f);
 
 	private Vector2 _lastSavedPos = new(-1, -1);
 
@@ -121,11 +121,10 @@ internal sealed class HimechanHud : Window
 		var small = fontSize * 0.8f;
 
 		// Columns: [reserved GCDs] [ring] [queue]
-		var sideWidth = MathF.Max(MaxReserved, MaxQueue) * (SmallIcon + Gap) * s;
 		var ringBox = (Ring + RingThickness) * 2f * s;
-		var height = ringBox + fontSize * 2.4f;
+		var height = ringBox + fontSize * 1.4f;
 		var leftWidth = MaxReserved * (SmallIcon + Gap) * s;
-		var rightWidth = MaxQueue * (SmallIcon + Gap) * s;
+		var rightWidth = MaxQueue * (AbilityIcon + Gap) * s;
 		var total = new Vector2(leftWidth + ringBox + rightWidth + 24f * s, height + 8f * s);
 		ImGui.Dummy(total);
 
@@ -145,7 +144,6 @@ internal sealed class HimechanHud : Window
 
 		// Reserved GCDs (left, right-aligned toward the ring).
 		var rowY = center.Y - SmallIcon * 0.5f * s;
-		draw.AddText(font, small, new Vector2(origin.X + 6f * s, rowY - small - 2f * s), ColLabel, "예약 GCD");
 		var x = center.X - ringBox * 0.5f - 12f * s - SmallIcon * s;
 		for (var i = 0; i < MaxReserved; i++)
 		{
@@ -164,11 +162,10 @@ internal sealed class HimechanHud : Window
 		var queue = whm.HudQueueEntries();
 		var places = whm.HudGapPlaces;
 		x = center.X + ringBox * 0.5f + 12f * s;
-		draw.AddText(font, small, new Vector2(x, rowY - small - 2f * s), ColLabel, "예약 oGCD (우선순위 순)");
 		for (var i = 0; i < MaxQueue; i++)
 		{
-			var pos = new Vector2(x, rowY);
-			var max = pos + new Vector2(SmallIcon * s, SmallIcon * s);
+			var pos = new Vector2(x, rowY + (SmallIcon - AbilityIcon) * 0.5f * s);
+			var max = pos + new Vector2(AbilityIcon * s, AbilityIcon * s);
 			var open = i < places;
 			if (open)
 			{
@@ -177,13 +174,13 @@ internal sealed class HimechanHud : Window
 
 			if (i < queue.Count)
 			{
-				DrawIcon(draw, pos, SmallIcon * s, queue[i], open ? ColSlideOk : ColFrame, font, small);
+				DrawIcon(draw, pos, AbilityIcon * s, queue[i], open ? ColSlideOk : ColFrame, font, small);
 			}
 			else
 			{
 				draw.AddRect(pos, max, open ? ColSlideOk : ColDim, 4f * s, ImDrawFlags.None, open ? 1.5f : 1f);
 			}
-			x += (SmallIcon + Gap) * s;
+			x += (AbilityIcon + Gap) * s;
 		}
 
 		SavePositionIfMoved(settings);
@@ -214,10 +211,10 @@ internal sealed class HimechanHud : Window
 		_moveAlpha += ((moveSafe ? 1f : 0f) - _moveAlpha) * Math.Min(1f, dt * 14f);
 		var a = _moveAlpha;
 
+		// Simple single halo (user decision 2026-10-15), still faded in and out.
 		if (a > 0.02f)
 		{
-			draw.AddCircle(center, r, Fade(ColSlideOk, 0.10f * a), 48, thick * 4.2f);
-			draw.AddCircle(center, r, Fade(ColSlideOk, 0.22f * a), 48, thick * 2.4f);
+			draw.AddCircle(center, r, Fade(ColSlideOk, 0.28f * a), 48, thick * 2.6f);
 		}
 
 		draw.AddCircle(center, r, Lerp(ColRingBase, ColRingSafe, a), 48, thick);
@@ -258,22 +255,13 @@ internal sealed class HimechanHud : Window
 		}
 		var frameColor = stopNow ? ColStop : Lerp(ColFrameNext, ColSlideOk, a);
 		draw.AddRect(min, center + new Vector2(half, half), frameColor, 5f * s, ImDrawFlags.None, 2f * s);
-		if (centerGcd is { } badge)
-		{
-			var bsize = ImGui.CalcTextSize(badge.Badge) * 0.8f * s;
-			draw.AddText(font, small, new Vector2(center.X - bsize.X * 0.5f, center.Y - r - thick - small - 2f * s), ColLabel, badge.Badge);
-		}
 
-		// Time under the ring, then the movement state (fading).
-		var timeText = remain > 0f ? $"{remain:F2}s" : "준비";
-		var size = ImGui.CalcTextSize(timeText) * s;
-		draw.AddText(font, fontSize, new Vector2(center.X - size.X * 0.5f, center.Y + r + thick + 2f * s), ColText, timeText);
-		var stateText = stopNow ? "정지" : "이동 가능";
-		var stateAlpha = stopNow ? 1f : a;
-		if (stateAlpha > 0.05f)
+		// The only text on the HUD (user decision 2026-10-15): the remaining GCD time. Everything else is colour.
+		if (remain > 0f)
 		{
-			var msize = ImGui.CalcTextSize(stateText) * 0.8f * s;
-			draw.AddText(font, small, new Vector2(center.X - msize.X * 0.5f, center.Y + r + thick + 2f * s + fontSize), Fade(stopNow ? ColStop : ColSlideOk, stateAlpha), stateText);
+			var timeText = $"{remain:F2}s";
+			var size = ImGui.CalcTextSize(timeText) * s;
+			draw.AddText(font, fontSize, new Vector2(center.X - size.X * 0.5f, center.Y + r + thick + 2f * s), ColText, timeText);
 		}
 	}
 
@@ -320,18 +308,12 @@ internal sealed class HimechanHud : Window
 		var thickness = entry.Intercepted || entry.NeedsCast ? 2f : entry.Dim ? 1f : 1.5f;
 		draw.AddRect(pos, max, frameCol, 4f, ImDrawFlags.None, thickness);
 
-		// Status tag: a filled strip along the bottom edge of the icon with dark text, so it reads as part of the box.
-		var tag = entry.Intercepted ? "끼어듦" : entry.NeedsCast ? "정지" : null;
-		if (tag != null)
+		// Status marker without text (user decision 2026-10-15): a filled strip along the bottom edge in the frame colour.
+		if (entry.Intercepted || entry.NeedsCast)
 		{
-			var tagSize = ImGui.CalcTextSize(tag) * 0.8f;
-			var tagHeight = tagSize.Y + 2f;
-			draw.AddRectFilled(new Vector2(pos.X + 1f, max.Y - tagHeight - 1f), new Vector2(max.X - 1f, max.Y - 1f), frameCol, 3f, ImDrawFlags.RoundCornersBottom);
-			draw.AddText(font, small, new Vector2(pos.X + (size - tagSize.X) * 0.5f, max.Y - tagHeight), ColTagText, tag);
+			var strip = MathF.Max(3f, size * 0.14f);
+			draw.AddRectFilled(new Vector2(pos.X + 1f, max.Y - strip - 1f), new Vector2(max.X - 1f, max.Y - 1f), frameCol, 3f, ImDrawFlags.RoundCornersBottom);
 		}
-
-		var badgeSize = ImGui.CalcTextSize(entry.Badge) * 0.8f;
-		draw.AddText(font, small, new Vector2(pos.X + (size - badgeSize.X) * 0.5f, max.Y + 2f), entry.Dim ? ColDim : ColLabel, entry.Badge);
 	}
 
 	private void SavePositionIfMoved(HimechanSettings settings)
