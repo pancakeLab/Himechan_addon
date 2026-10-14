@@ -41,7 +41,6 @@ internal sealed class HimechanHud : Window
 	private static readonly uint ColPanel = Color(0.04f, 0.05f, 0.08f, 0.55f);
 	private static readonly uint ColUnlocked = Color(1f, 0.83f, 0.30f, 0.9f);
 	private static readonly uint ColRingSafe = Color(0.16f, 0.36f, 0.26f, 0.95f);
-	private static readonly uint ColSlideGlow = Color(0.45f, 0.95f, 0.62f, 0.55f);
 	private static readonly uint ColQueueWindow = Color(0.45f, 0.93f, 0.95f, 0.95f);
 	private static readonly uint ColGapGlow = Color(0.5f, 0.88f, 0.63f, 0.22f);
 	private static readonly uint ColStop = Color(1f, 0.55f, 0.25f, 1f);
@@ -139,10 +138,12 @@ internal sealed class HimechanHud : Window
 
 		var center = origin + new Vector2(leftWidth + 12f * s + ringBox * 0.5f, 6f * s + ringBox * 0.5f);
 		var centerGcd = whm.HudCenterGcd();
-		DrawRing(draw, center, s, whm, settings, font, fontSize, small, centerGcd);
+		var reserved = whm.HudReservedGcds(centerGcd);
+		// The GCD that fires next: the first reserved entry while casting, otherwise the planned centre entry.
+		var nextNeedsCast = reserved.Count > 0 ? reserved[0].NeedsCast : centerGcd is { Badge: "다음", NeedsCast: true };
+		DrawRing(draw, center, s, whm, settings, font, fontSize, small, centerGcd, nextNeedsCast);
 
 		// Reserved GCDs (left, right-aligned toward the ring).
-		var reserved = whm.HudReservedGcds(centerGcd);
 		var rowY = center.Y - SmallIcon * 0.5f * s;
 		draw.AddText(font, small, new Vector2(origin.X + 6f * s, rowY - small - 2f * s), ColLabel, "예약 GCD");
 		var x = center.X - ringBox * 0.5f - 12f * s - SmallIcon * s;
@@ -188,7 +189,7 @@ internal sealed class HimechanHud : Window
 		SavePositionIfMoved(settings);
 	}
 
-	private static void DrawRing(ImDrawListPtr draw, Vector2 center, float s, WHM_Himechan whm, HimechanSettings settings, ImFontPtr font, float fontSize, float small, WHM_Himechan.HudEntry? centerGcd)
+	private void DrawRing(ImDrawListPtr draw, Vector2 center, float s, WHM_Himechan whm, HimechanSettings settings, ImFontPtr font, float fontSize, float small, WHM_Himechan.HudEntry? centerGcd, bool nextNeedsCast)
 	{
 		var r = Ring * s;
 		var thick = RingThickness * s;
@@ -197,30 +198,29 @@ internal sealed class HimechanHud : Window
 		var elapsed = total > 0f ? Math.Clamp(total - remain, 0f, total) : 0f;
 		var frac = total > 0f ? elapsed / total : 0f;
 		const float start = -MathF.PI / 2f;
+		const float stopMargin = 0.15f; // stand still this long before a cast-time GCD fires
 
-		// Slidecast state first: when it is safe to move, the whole ring glows green.
+		// Move-safe (user decision 2026-10-14): every moment where moving cannot delay a cast. Casting: from the slidecast
+		// point. Not casting: always, except the last moment before a cast-time GCD fires (then "stop").
 		var player = Player.Object;
-		var frameColor = ColFrameNext;
-		var slideSafe = false;
-		var castLeft = 0f;
-		if (player != null && player.IsCasting && total > 0f)
+		var casting = player != null && player.IsCasting && total > 0f;
+		var castLeft = casting ? player!.TotalCastTime - player.CurrentCastTime : 0f;
+		var slide = Math.Clamp(settings.HudSlidecastWindow, 0f, 2f);
+		var moveSafe = casting ? castLeft <= slide : !nextNeedsCast || remain > stopMargin;
+		var stopNow = !moveSafe && !casting;
+
+		// Smooth fade so the state change reads as a glow, not a flash.
+		var dt = Math.Clamp(ImGui.GetIO().DeltaTime, 0f, 0.1f);
+		_moveAlpha += ((moveSafe ? 1f : 0f) - _moveAlpha) * Math.Min(1f, dt * 14f);
+		var a = _moveAlpha;
+
+		if (a > 0.02f)
 		{
-			castLeft = player.TotalCastTime - player.CurrentCastTime;
-			slideSafe = castLeft <= Math.Clamp(settings.HudSlidecastWindow, 0f, 2f);
+			draw.AddCircle(center, r, Fade(ColSlideOk, 0.10f * a), 48, thick * 4.2f);
+			draw.AddCircle(center, r, Fade(ColSlideOk, 0.22f * a), 48, thick * 2.4f);
 		}
 
-		if (slideSafe)
-		{
-			draw.AddCircle(center, r, ColSlideGlow, 48, thick * 3f);
-			draw.AddCircle(center, r + thick * 1.6f, ColSlideOk, 48, 2f * s);
-			frameColor = ColSlideOk;
-		}
-		else if (centerGcd is { NeedsCast: true, Badge: "다음" })
-		{
-			frameColor = ColStop; // The next GCD needs a cast: stand still when it fires.
-		}
-
-		draw.AddCircle(center, r, slideSafe ? ColRingSafe : ColRingBase, 48, thick);
+		draw.AddCircle(center, r, Lerp(ColRingBase, ColRingSafe, a), 48, thick);
 
 		// No-weave zone: the last ManualWeaveTail seconds of the GCD.
 		if (total > 0f)
@@ -237,27 +237,26 @@ internal sealed class HimechanHud : Window
 			draw.PathStroke(ColRingElapsed, ImDrawFlags.None, thick);
 		}
 
-		// One window (user decision 2026-10-14): from the slidecast point of the current cast to the end of the GCD you may
-		// move AND your next GCD press is accepted into the stack. Drawn as an inner green arc with a tick at its start.
-		if (player != null && player.IsCasting && total > 0f)
+		// While casting: inner arc from the slidecast point to the end of the GCD = move + next press accepted.
+		if (casting)
 		{
-			var slide = Math.Clamp(settings.HudSlidecastWindow, 0f, 2f);
 			var at = Math.Clamp((elapsed + castLeft - slide) / total, 0f, 1f);
 			var from = start + MathF.Tau * at;
 			var inner = r - thick * 0.5f - 2f * s;
 			draw.PathArcTo(center, inner, from, start + MathF.Tau, 24);
-			draw.PathStroke(ColSlideOk, ImDrawFlags.None, 2f * s);
+			draw.PathStroke(Fade(ColSlideOk, 0.6f + 0.4f * a), ImDrawFlags.None, 2f * s);
 			var dir = new Vector2(MathF.Cos(from), MathF.Sin(from));
 			draw.AddLine(center + dir * (inner - 4f * s), center + dir * (r + thick * 0.5f), ColSlide, 2f * s);
 		}
 
-		// Center: the GCD being cast (player or RSR), else RSR's next GCD.
+		// Center: the GCD being cast (player or RSR), else RSR's next GCD. Frame: green while moving is safe, orange when it is time to stop.
 		var half = CenterIcon * 0.5f * s;
 		var min = center - new Vector2(half, half);
 		if (centerGcd is { } cg && IconSet.GetTexture((ActionID)cg.ActionId, out var tex))
 		{
 			draw.AddImage(tex.Handle, min, center + new Vector2(half, half));
 		}
+		var frameColor = stopNow ? ColStop : Lerp(ColFrameNext, ColSlideOk, a);
 		draw.AddRect(min, center + new Vector2(half, half), frameColor, 5f * s, ImDrawFlags.None, 2f * s);
 		if (centerGcd is { } badge)
 		{
@@ -265,16 +264,33 @@ internal sealed class HimechanHud : Window
 			draw.AddText(font, small, new Vector2(center.X - bsize.X * 0.5f, center.Y - r - thick - small - 2f * s), ColLabel, badge.Badge);
 		}
 
-		// Time under the ring (gap usage is shown on the oGCD slots themselves).
+		// Time under the ring, then the movement state (fading).
 		var timeText = remain > 0f ? $"{remain:F2}s" : "준비";
 		var size = ImGui.CalcTextSize(timeText) * s;
 		draw.AddText(font, fontSize, new Vector2(center.X - size.X * 0.5f, center.Y + r + thick + 2f * s), ColText, timeText);
-		if (slideSafe)
+		var stateText = stopNow ? "정지" : "이동 가능";
+		var stateAlpha = stopNow ? 1f : a;
+		if (stateAlpha > 0.05f)
 		{
-			const string moveText = "이동 가능";
-			var msize = ImGui.CalcTextSize(moveText) * 0.8f * s;
-			draw.AddText(font, small, new Vector2(center.X - msize.X * 0.5f, center.Y + r + thick + 2f * s + fontSize), ColSlideOk, moveText);
+			var msize = ImGui.CalcTextSize(stateText) * 0.8f * s;
+			draw.AddText(font, small, new Vector2(center.X - msize.X * 0.5f, center.Y + r + thick + 2f * s + fontSize), Fade(stopNow ? ColStop : ColSlideOk, stateAlpha), stateText);
 		}
+	}
+
+	private float _moveAlpha;
+
+	private static uint Fade(uint color, float alpha)
+	{
+		var v = ImGui.ColorConvertU32ToFloat4(color);
+		v.W *= Math.Clamp(alpha, 0f, 1f);
+		return ImGui.ColorConvertFloat4ToU32(v);
+	}
+
+	private static uint Lerp(uint from, uint to, float t)
+	{
+		var f = ImGui.ColorConvertU32ToFloat4(from);
+		var g = ImGui.ColorConvertU32ToFloat4(to);
+		return ImGui.ColorConvertFloat4ToU32(Vector4.Lerp(f, g, Math.Clamp(t, 0f, 1f)));
 	}
 
 	private static void DrawIcon(ImDrawListPtr draw, Vector2 pos, float size, WHM_Himechan.HudEntry entry, uint frame, ImFontPtr font, float small)
