@@ -21,6 +21,24 @@ internal sealed class HimechanSettings
 	/// <summary>#29: show RSR's own settings window / messages in Korean (central dictionary, spec 3.12).</summary>
 	public bool TranslateRsrUi { get; set; } = true;
 
+	/// <summary>#34 HUD (ring design C, 2026-10-14): show the GCD ring with the reserved GCD / oGCD stacks.</summary>
+	public bool HudEnabled { get; set; } = true;
+
+	/// <summary>Locked: no mouse input reaches the HUD window (click-through) and it cannot be dragged.</summary>
+	public bool HudLocked { get; set; } = false;
+
+	public float HudScale { get; set; } = 1.0f;
+
+	/// <summary>Show only in combat / countdown (the unlocked HUD is always shown so it can be placed).</summary>
+	public bool HudCombatOnly { get; set; } = true;
+
+	/// <summary>Slidecast window: moving is safe once this much of the cast is left (seconds).</summary>
+	public float HudSlidecastWindow { get; set; } = 0.5f;
+
+	/// <summary>Saved window position (screen pixels); negative = not placed yet (centered above the cast bar).</summary>
+	public float HudPosX { get; set; } = -1f;
+	public float HudPosY { get; set; } = -1f;
+
 	/// <summary>Spec 3.11 / #30: while solo, treat the player as the tank. Never saved, so it is always off after a restart.</summary>
 	[JsonIgnore]
 	public bool TestMode { get; set; } = false;

@@ -101,7 +101,7 @@ public sealed partial class WHM_Himechan
 		var bestRank = int.MaxValue;
 		for (var i = 0; i < _weaveQueue.Count; i++)
 		{
-			var rank = WeaveRank(Service.GetAdjustedActionId(_weaveQueue[i].Id));
+			var rank = QueueRank(_weaveQueue[i]);
 			if (i == 0 || rank < bestRank)
 			{
 				best = i;
@@ -120,21 +120,74 @@ public sealed partial class WHM_Himechan
 		}
 
 		var commandRank = WeaveRank(command.AdjustedID);
-		return WeaveRank(Service.GetAdjustedActionId(_weaveQueue[SelectQueueHead()].Id)) < commandRank;
+		return QueueRank(_weaveQueue[SelectQueueHead()]) < commandRank;
 	}
 
 	/// <summary>Tail rule for RSR command abilities and queue replays: the player's threshold, not the automatic budget.</summary>
 	internal bool ManualWeaveFits(float remain) => remain > WHMHimechanPolicy.ManualTail(ManualWeaveTail);
+
+	// 2026-10-14 user decision: potions and food are oGCD actions too. They sit at the very top of the order; by default they
+	// ignore weaving (used at once, no gap bookkeeping), the option turns them into normal queue entries.
+	[RotationConfig(CombatType.PvE, Name = "영약·음식은 위빙을 무시하고 즉시 사용 (끄면 큐 최상단에서 틈에 맞춰 사용)", Parent = nameof(SingleWeaveQueue), ParentValue = true)]
+	public bool ItemsBypassQueue { get; set; } = true;
+
+	private const uint ItemHqOffset = 1_000_000;
+	private const uint ItemCategoryMedicine = 44;
+	private const uint ItemCategoryMeal = 46;
 
 	private sealed class QueuedAbility
 	{
 		public uint Id;
 		public ulong Target;
 		public bool GroundTarget;
+		public bool IsItem;     // ActionType.Item (potion / food); Id keeps the HQ offset
+		public uint IconId;     // items only (actions resolve their icon from the id)
 		public double Expire;
 		public string Label = string.Empty;
 		public bool IsRequest; // Himechan command (e.g. /히메짱물장): chat feedback on failure
 	}
+
+	/// <summary>One line of the HUD's oGCD stack.</summary>
+	internal readonly record struct HudEntry(uint ActionId, bool IsItem, uint IconId, string Label, string Badge, bool Dim);
+
+	/// <summary>Queue entries in firing order (priority, then press order), followed by RSR's command ability and the next automatic candidate.</summary>
+	internal List<HudEntry> HudQueueEntries()
+	{
+		List<HudEntry> list = [];
+		var order = new List<int>(_weaveQueue.Count);
+		for (var i = 0; i < _weaveQueue.Count; i++)
+		{
+			order.Add(i);
+		}
+		order.Sort((a, b) =>
+		{
+			var ra = QueueRank(_weaveQueue[a]);
+			var rb = QueueRank(_weaveQueue[b]);
+			return ra != rb ? ra.CompareTo(rb) : a.CompareTo(b);
+		});
+
+		foreach (var i in order)
+		{
+			var q = _weaveQueue[i];
+			list.Add(new HudEntry(q.IsItem ? q.Id : Service.GetAdjustedActionId(q.Id), q.IsItem, q.IconId, q.Label,
+				q.IsItem ? "아이템" : q.IsRequest ? "요청" : "수동", false));
+		}
+
+		if (DataCenter.CommandNextAction is IBaseAction command && command.Info.IsAbility)
+		{
+			list.Add(new HudEntry(command.AdjustedID, false, 0, command.Name, "명령", false));
+		}
+
+		if (RotationSolver.Updaters.ActionUpdater.NextAction is IBaseAction auto && auto.Info.IsAbility
+			&& !ReferenceEquals(auto, DataCenter.CommandNextAction))
+		{
+			list.Add(new HudEntry(auto.AdjustedID, false, 0, auto.Name, "자동", true));
+		}
+
+		return list;
+	}
+
+	private int QueueRank(QueuedAbility q) => q.IsItem ? -1 : WeaveRank(Service.GetAdjustedActionId(q.Id));
 
 	// 2026-10-14 user request: after an instant GCD (Dia, lilies, Glare IV, Swiftcast Glare) the gap is wide enough for two
 	// abilities. A second ability in such a gap is allowed only for player-driven inputs (queue replays, /rsr DoActions);
@@ -196,6 +249,10 @@ public sealed partial class WHM_Himechan
 		{
 			MarkWeaveUsed("rsr", action.AdjustedID);
 		}
+		else if (action is IBaseItem && !ItemsBypassQueue)
+		{
+			MarkWeaveUsed("rsr-item", action.ID);
+		}
 	}
 
 	/// <summary>
@@ -207,8 +264,18 @@ public sealed partial class WHM_Himechan
 	{
 		try
 		{
-			if (_weaveReplaying || actionType != 1 || useType == 1 // 1 = the game executing its own queued input
+			if (_weaveReplaying || useType == 1 // 1 = the game executing its own queued input
 				|| !WeaveQueueActive || !InCombat || OpenerOwnsInput || _manualRaise)
+			{
+				return false;
+			}
+
+			if (actionType == 2) // ActionType.Item
+			{
+				return OnPlayerItemInput(actionId, targetObjectId);
+			}
+
+			if (actionType != 1)
 			{
 				return false;
 			}
@@ -259,7 +326,40 @@ public sealed partial class WHM_Himechan
 		}
 	}
 
-	private void EnqueueAbility(uint actionId, uint adjusted, ulong target, bool groundTarget, string label, bool isRequest, string reason)
+	/// <summary>A potion or food press: bypass (default) or top of the queue. Other items are never touched.</summary>
+	private bool OnPlayerItemInput(uint itemId, ulong targetObjectId)
+	{
+		var row = Service.GetSheet<Lumina.Excel.Sheets.Item>().GetRowOrDefault(itemId % ItemHqOffset);
+		if (row is not { } item || item.ItemUICategory.RowId is not (ItemCategoryMedicine or ItemCategoryMeal))
+		{
+			return false;
+		}
+
+		var label = item.Name.ExtractText();
+		if (ItemsBypassQueue)
+		{
+			RecordHimechanDiagnostic($"WEAVE ITEM BYPASS {label}({itemId})");
+			return false;
+		}
+
+		var remain = DataCenter.DefaultGCDRemain;
+		var reason = _weaveQueue.Count > 0 ? "queue"
+			: !WeaveSlotFree ? (WeaveSecondSlotFree ? "slot-wide" : "slot")
+			: Player?.IsCasting == true ? "casting"
+			: DataCenter.AnimationLock > 0f ? "lock"
+			: remain > 0f && remain <= WHMHimechanPolicy.ManualTail(ManualWeaveTail) ? "tail"
+			: null;
+		if (reason == null)
+		{
+			MarkWeaveUsed("player-item", itemId);
+			return false;
+		}
+
+		EnqueueAbility(itemId, itemId, targetObjectId, false, label, false, reason, isItem: true, iconId: item.Icon);
+		return true;
+	}
+
+	private void EnqueueAbility(uint actionId, uint adjusted, ulong target, bool groundTarget, string label, bool isRequest, string reason, bool isItem = false, uint iconId = 0)
 	{
 		foreach (var q in _weaveQueue)
 		{
@@ -286,6 +386,8 @@ public sealed partial class WHM_Himechan
 			Id = actionId,
 			Target = target,
 			GroundTarget = groundTarget,
+			IsItem = isItem,
+			IconId = iconId,
 			Expire = Now + WHMHimechanPolicy.WeaveQueueLifetime,
 			Label = label,
 			IsRequest = isRequest,
@@ -369,7 +471,11 @@ public sealed partial class WHM_Himechan
 		_weaveReplaying = true;
 		try
 		{
-			if (head.GroundTarget && target != null)
+			if (head.IsItem)
+			{
+				ok = manager->UseAction(ActionType.Item, head.Id, head.Target);
+			}
+			else if (head.GroundTarget && target != null)
 			{
 				var loc = target.Position;
 				ok = manager->UseActionLocation(ActionType.Action, head.Id, target.GameObjectId, &loc);

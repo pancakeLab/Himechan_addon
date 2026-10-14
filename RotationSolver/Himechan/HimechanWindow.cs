@@ -76,6 +76,63 @@ internal sealed class HimechanWindow : Window
 		}
 
 		ImGui.Separator();
+		ImGui.TextUnformatted("HUD (GCD 링 · 예약 GCD/oGCD)");
+
+		var hud = settings.HudEnabled;
+		if (ImGui.Checkbox("HUD 표시", ref hud))
+		{
+			settings.HudEnabled = hud;
+			HimechanSettings.Save();
+		}
+
+		var locked = settings.HudLocked;
+		if (ImGui.Checkbox("HUD 잠금 (잠그면 클릭이 통과하고 움직이지 않음)", ref locked))
+		{
+			settings.HudLocked = locked;
+			HimechanSettings.Save();
+		}
+		ImGui.TextWrapped(locked
+			? "잠겨 있습니다. 옮기려면 잠금을 풀고 HUD의 노란 테두리를 끌어 놓은 뒤 다시 잠그세요."
+			: "잠금이 풀려 있어 HUD가 항상 보이고 끌어서 옮길 수 있습니다. 위치는 자동 저장됩니다.");
+
+		var combatOnly = settings.HudCombatOnly;
+		if (ImGui.Checkbox("전투·카운트다운 중에만 표시 (잠금 상태에서)", ref combatOnly))
+		{
+			settings.HudCombatOnly = combatOnly;
+			HimechanSettings.Save();
+		}
+
+		var scale = settings.HudScale;
+		ImGui.SetNextItemWidth(200);
+		if (ImGui.SliderFloat("크기 배율", ref scale, 0.5f, 2.5f, "%.2f"))
+		{
+			settings.HudScale = scale;
+		}
+		if (ImGui.IsItemDeactivatedAfterEdit())
+		{
+			HimechanSettings.Save();
+		}
+
+		var slide = settings.HudSlidecastWindow;
+		ImGui.SetNextItemWidth(200);
+		if (ImGui.SliderFloat("슬라이드 캐스팅 안전선 (시전 종료 전, 초)", ref slide, 0.2f, 1.0f, "%.2f"))
+		{
+			settings.HudSlidecastWindow = slide;
+		}
+		if (ImGui.IsItemDeactivatedAfterEdit())
+		{
+			HimechanSettings.Save();
+		}
+
+		if (ImGui.Button("HUD 위치 초기화 (화면 중앙 아래)"))
+		{
+			settings.HudPosX = -1f;
+			settings.HudPosY = -1f;
+			HimechanSettings.Save();
+		}
+		ImGui.TextWrapped("링: 파랑 = 지난 GCD, 빨강 = 위빙 불가 구간, 노란 눈금 = 슬라이드 캐스팅 안전선(도달하면 가운데 테두리가 초록). 왼쪽 = 예약 GCD(명령·백합 요청), 오른쪽 = 대기 oGCD(우선순위 순, 흐린 칸 = 다음 자동 후보).");
+
+		ImGui.Separator();
 		ImGui.TextUnformatted("디버그 · 테스트");
 
 		var debug = settings.DebugMode;

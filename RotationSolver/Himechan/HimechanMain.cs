@@ -38,6 +38,7 @@ internal static class HimechanMain
 			_window = new HimechanWindow();
 			_windowSystem = new WindowSystem("Himechan");
 			_windowSystem.AddWindow(_window);
+			_windowSystem.AddWindow(new HimechanHud());
 			Svc.PluginInterface.UiBuilder.Draw += _windowSystem.Draw;
 
 			_ = Svc.Commands.AddHandler(SettingsCommand, new CommandInfo(OnSettingsCommand)
