@@ -32,7 +32,9 @@ public sealed partial class WHM_Himechan
 		}
 
 		// #32 single weave: one ability per GCD gap, and queued player inputs go before automation.
-		if (InCombat && WeaveQueueActive && (!WeaveSlotFree || WeaveQueueCount > 0))
+		// Second place of a wide gap for automation: AutoAbilityWeaveOk above already required the automatic budget.
+		if (InCombat && WeaveQueueActive
+			&& (!(WeaveSlotFree || (DoubleWeaveAutomation && WeaveSecondSlotFree)) || WeaveQueueCount > 0))
 		{
 			return false;
 		}
@@ -98,9 +100,17 @@ public sealed partial class WHM_Himechan
 		if (WeaveQueueActive && action is IBaseAction ability && ability.Info.IsAbility)
 		{
 			var isCommand = ReferenceEquals(DataCenter.CommandNextAction, action) && !ReferenceEquals(action, _gatedPick);
-			if (!WeaveSlotFree && !(isCommand && WeaveSecondSlotFree))
+			var secondPlace = WeaveSecondSlotFree && (isCommand || DoubleWeaveAutomation);
+			if (!WeaveSlotFree && !secondPlace)
 			{
-				return false; // Automation: one per gap. A player command may take the second place of a wide gap.
+				return false; // One per gap, unless the wide gap still has its second place.
+			}
+
+			// RSR's own picks (e.g. Surecast) taking the second place must pass the automatic budget; gated picks are rechecked below.
+			if (!WeaveSlotFree && !isCommand && !ReferenceEquals(action, _gatedPick)
+				&& DataCenter.DefaultGCDRemain > 0f && !MaintenanceWeaveSafe())
+			{
+				return false;
 			}
 
 			if (isCommand)

@@ -147,6 +147,11 @@ public sealed partial class WHM_Himechan
 		Tooltip = "글레어 시전 뒤 틈은 약 0.9초라 해당 없고, 디아·백합·글레어 IV·신속마 글레어 뒤 틈(약 1.8초 이상)만 해당됩니다. 두 번째 능력도 수동 기준(남은 GCD > 미루는 기준)을 지킵니다.")]
 	public float WideGapMinimum { get; set; } = 1.5f;
 
+	// 2026-10-14 user decision: automation may take the second place too, but only when the automatic weave budget
+	// (remaining GCD above 0.85s+) still holds, so the next GCD is never pushed.
+	[RotationConfig(CombatType.PvE, Name = "자동 능력도 넓은 틈에서 2개까지 (두 번째는 자동 위빙 예산을 통과할 때만)", Parent = nameof(DoubleWeaveInWideGap), ParentValue = true)]
+	public bool DoubleWeaveAutomation { get; set; } = true;
+
 	private readonly List<QueuedAbility> _weaveQueue = [];
 	private double _weaveSlotEnd; // the current GCD gap holds at least one ability until this time
 	private int _weaveGapCount;   // abilities used in the current gap
