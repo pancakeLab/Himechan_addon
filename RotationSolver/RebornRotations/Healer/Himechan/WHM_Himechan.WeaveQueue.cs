@@ -147,8 +147,8 @@ public sealed partial class WHM_Himechan
 		public bool IsRequest; // Himechan command (e.g. /히메짱물장): chat feedback on failure
 	}
 
-	/// <summary>One line of the HUD's oGCD stack.</summary>
-	internal readonly record struct HudEntry(uint ActionId, bool IsItem, uint IconId, string Label, string Badge, bool Dim);
+	/// <summary>One line of the HUD's stacks. NeedsCast: a cast-time GCD without Swiftcast, so the player must stand still when it fires.</summary>
+	internal readonly record struct HudEntry(uint ActionId, bool IsItem, uint IconId, string Label, string Badge, bool Dim, bool NeedsCast = false);
 
 	/// <summary>Queue entries in firing order (priority, then press order), followed by RSR's command ability and the next automatic candidate.</summary>
 	internal List<HudEntry> HudQueueEntries()
@@ -328,7 +328,7 @@ public sealed partial class WHM_Himechan
 	}
 
 	/// <summary>A potion or food press: bypass (default) or top of the queue. Other items are never touched.</summary>
-	private bool OnPlayerItemInput(uint itemId, ulong targetObjectId)
+	private unsafe bool OnPlayerItemInput(uint itemId, ulong targetObjectId)
 	{
 		var row = Service.GetSheet<Lumina.Excel.Sheets.Item>().GetRowOrDefault(itemId % ItemHqOffset);
 		if (row is not { } item || item.ItemUICategory.RowId is not (ItemCategoryMedicine or ItemCategoryMeal))
@@ -340,6 +340,14 @@ public sealed partial class WHM_Himechan
 		if (ItemsBypassQueue)
 		{
 			RecordHimechanDiagnostic($"WEAVE ITEM BYPASS {label}({itemId})");
+			return false;
+		}
+
+		// On cooldown beyond the queue's life: never stored (the game shows its own error).
+		var manager = ActionManager.Instance();
+		if (manager != null && manager->IsRecastTimerActive(ActionType.Item, itemId)
+			&& manager->GetRecastTime(ActionType.Item, itemId) - manager->GetRecastTimeElapsed(ActionType.Item, itemId) > WHMHimechanPolicy.WeaveQueueLifetime)
+		{
 			return false;
 		}
 

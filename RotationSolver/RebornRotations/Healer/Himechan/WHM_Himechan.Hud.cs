@@ -53,7 +53,7 @@ public sealed partial class WHM_Himechan
 		var next = RotationSolver.Updaters.ActionUpdater.NextGCDAction;
 		if (next != null && next.AdjustedID != centerId && !Contains(list, next.AdjustedID))
 		{
-			list.Add(new HudEntry(next.AdjustedID, false, 0, next.Name, "다음", false));
+			list.Add(new HudEntry(next.AdjustedID, false, 0, next.Name, "다음", false, NeedsCastFor(next.AdjustedID)));
 		}
 
 		if (_solaceRequest)
@@ -68,7 +68,7 @@ public sealed partial class WHM_Himechan
 		if (DataCenter.CommandNextAction is IBaseAction command && command.Info.IsRealGCD
 			&& command.AdjustedID != centerId && !Contains(list, command.AdjustedID))
 		{
-			list.Add(new HudEntry(command.AdjustedID, false, 0, command.Name, "명령", false));
+			list.Add(new HudEntry(command.AdjustedID, false, 0, command.Name, "명령", false, NeedsCastFor(command.AdjustedID)));
 		}
 
 		// Stored GCD presses (#36) fire after everything Himechan planned, in press order.
@@ -138,6 +138,13 @@ public sealed partial class WHM_Himechan
 	{
 		var row = Service.GetSheet<LuminaAction>().GetRowOrDefault(adjustedId);
 		return row is { } action && action.ActionCategory.RowId is (uint)ActionCate.Spell or (uint)ActionCate.Weaponskill;
+	}
+
+	/// <summary>A GCD with a cast time while Swiftcast is not up: moving when it fires would cancel it.</summary>
+	private static bool NeedsCastFor(uint adjustedId)
+	{
+		var row = Service.GetSheet<LuminaAction>().GetRowOrDefault(adjustedId);
+		return row is { } action && action.Cast100ms > 0 && !HasSwift;
 	}
 
 	/// <summary>Text under the ring: gap usage for this GCD.</summary>

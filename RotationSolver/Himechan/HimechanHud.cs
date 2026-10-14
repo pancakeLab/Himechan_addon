@@ -24,7 +24,7 @@ internal sealed class HimechanHud : Window
 	private const float CenterIcon = 40f;
 	private const float SmallIcon = 34f;
 	private const float Gap = 4f;
-	private const int MaxReserved = 3;
+	private const int MaxReserved = 2; // user decision 2026-10-14: two reserved GCD boxes (the stack holds two)
 	private const int MaxQueue = 5;
 
 	private static readonly uint ColRingBase = Color(0.12f, 0.16f, 0.23f, 0.9f);
@@ -44,6 +44,7 @@ internal sealed class HimechanHud : Window
 	private static readonly uint ColSlideGlow = Color(0.5f, 0.88f, 0.63f, 0.28f);
 	private static readonly uint ColQueueWindow = Color(0.45f, 0.93f, 0.95f, 0.95f);
 	private static readonly uint ColGapGlow = Color(0.5f, 0.88f, 0.63f, 0.22f);
+	private static readonly uint ColStop = Color(1f, 0.55f, 0.25f, 1f);
 
 	private Vector2 _lastSavedPos = new(-1, -1);
 
@@ -302,10 +303,17 @@ internal sealed class HimechanHud : Window
 		{
 			draw.AddRectFilled(pos, max, ColRingBase, 4f);
 		}
-		draw.AddRect(pos, max, entry.Dim ? ColDim : frame, 4f, ImDrawFlags.None, entry.Dim ? 1f : 1.5f);
+		// A cast-time GCD without Swiftcast: orange frame + "정지" so the player knows to stand still when it fires.
+		var frameCol = entry.NeedsCast ? ColStop : entry.Dim ? ColDim : frame;
+		draw.AddRect(pos, max, frameCol, 4f, ImDrawFlags.None, entry.NeedsCast ? 2f : entry.Dim ? 1f : 1.5f);
+		if (entry.NeedsCast)
+		{
+			draw.AddRectFilled(new Vector2(pos.X, pos.Y), new Vector2(pos.X + size, pos.Y + 4f), ColStop);
+		}
 
-		var badgeSize = ImGui.CalcTextSize(entry.Badge) * 0.8f;
-		draw.AddText(font, small, new Vector2(pos.X + (size - badgeSize.X) * 0.5f, max.Y + 1f), entry.Dim ? ColDim : ColLabel, entry.Badge);
+		var badge = entry.NeedsCast ? entry.Badge + "·정지" : entry.Badge;
+		var badgeSize = ImGui.CalcTextSize(badge) * 0.8f;
+		draw.AddText(font, small, new Vector2(pos.X + (size - badgeSize.X) * 0.5f, max.Y + 1f), entry.NeedsCast ? ColStop : entry.Dim ? ColDim : ColLabel, badge);
 	}
 
 	private void SavePositionIfMoved(HimechanSettings settings)

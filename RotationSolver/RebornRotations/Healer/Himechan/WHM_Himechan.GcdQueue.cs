@@ -10,10 +10,10 @@ namespace RotationSolver.RebornRotations.Healer;
 // Glare presses kept the game queue busy and the Solace request expired unused, Dia refreshed late).
 public sealed partial class WHM_Himechan
 {
-	[RotationConfig(CombatType.PvE, Name = "GCD 선입력 스택 (최대 3개, 누른 순서. 히메짱이 계획한 GCD(디아 갱신·백합 요청)가 먼저)")]
+	[RotationConfig(CombatType.PvE, Name = "GCD 선입력 스택 (최대 2개, 누른 순서. 히메짱이 계획한 GCD(디아 갱신·백합 요청)가 먼저)")]
 	public bool GcdInputQueue { get; set; } = true;
 
-	private const int GcdQueueMax = 3;
+	private const int GcdQueueMax = 2; // user decision 2026-10-14 (was 3)
 	private const double GcdQueueLifetime = 8.0;
 	private const float GameQueueWindow = 0.5f;
 
@@ -38,7 +38,8 @@ public sealed partial class WHM_Himechan
 		List<HudEntry> list = [];
 		foreach (var q in _gcdQueue)
 		{
-			list.Add(new HudEntry(Service.GetAdjustedActionId(q.Id), false, 0, q.Label, "선입력", false));
+			var adjusted = Service.GetAdjustedActionId(q.Id);
+			list.Add(new HudEntry(adjusted, false, 0, q.Label, "선입력", false, NeedsCastFor(adjusted)));
 		}
 		return list;
 	}
@@ -78,6 +79,13 @@ public sealed partial class WHM_Himechan
 			var adjusted = Service.GetAdjustedActionId(actionId);
 			if (!IsGcdActionId(adjusted))
 			{
+				return false;
+			}
+
+			// No resources (lilies, blood lilies, MP): never stored; the game shows its own error (user request 2026-10-14).
+			if (!HasResourcesFor(adjusted))
+			{
+				RecordHimechanDiagnostic($"GCD Q SKIP no resource {ActionLabel(adjusted)}({adjusted})");
 				return false;
 			}
 
@@ -178,9 +186,31 @@ public sealed partial class WHM_Himechan
 			return false;
 		}
 
-		_gcdInFlightUntil = now + DataCenter.DefaultGCDRemain + 0.3;
+		// Short guard only: while the game holds it, ActionQueued blocks the next replay; once it fired, the restarted GCD
+		// (remaining > queue window) does. A guard of "remaining GCD + 0.3s" here lengthened every GCD by ~0.3s (log 2026-10-14).
+		_gcdInFlightUntil = now + 0.6;
 		RecordHimechanDiagnostic($"GCD Q REPLAY {head.Label}({head.Id}) target=0x{head.Target:X} gcd={DataCenter.DefaultGCDRemain:F2} left={_gcdQueue.Count}");
 		return false;
+	}
+
+	/// <summary>Resource gate for stored GCDs: lily heals need a lily, Afflatus Misery three blood lilies, casts their MP (Thin Air waives it).</summary>
+	private bool HasResourcesFor(uint adjustedId)
+	{
+		switch ((ActionID)adjustedId)
+		{
+			case ActionID.AfflatusSolacePvE:
+			case ActionID.AfflatusRapturePvE:
+				return Lily > 0;
+			case ActionID.AfflatusMiseryPvE:
+				return BloodLily >= 3;
+		}
+
+		if (((ActionID)adjustedId).GetActionFromID(true, RotationSolver.Updaters.RotationUpdater.CurrentRotationActions) is IBaseAction known)
+		{
+			return HasThinAir || DataCenter.CurrentMp >= known.Info.MPNeed;
+		}
+
+		return true;
 	}
 
 	private void DropGcd(int index, string reason)
