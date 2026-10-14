@@ -25,7 +25,7 @@ internal sealed class HimechanHud : Window
 	private const float SmallIcon = 34f;
 	private const float Gap = 4f;
 	private const int MaxReserved = 2; // user decision 2026-10-14: two reserved GCD boxes (the stack holds two)
-	private const int MaxQueue = 5;
+	private const int MaxQueue = 4; // user decision 2026-10-14 (was 5)
 
 	private static readonly uint ColRingBase = Color(0.12f, 0.16f, 0.23f, 0.9f);
 	private static readonly uint ColRingElapsed = Color(0.31f, 0.70f, 1f, 1f);
@@ -41,10 +41,12 @@ internal sealed class HimechanHud : Window
 	private static readonly uint ColPanel = Color(0.04f, 0.05f, 0.08f, 0.55f);
 	private static readonly uint ColUnlocked = Color(1f, 0.83f, 0.30f, 0.9f);
 	private static readonly uint ColRingSafe = Color(0.16f, 0.36f, 0.26f, 0.95f);
-	private static readonly uint ColSlideGlow = Color(0.5f, 0.88f, 0.63f, 0.28f);
+	private static readonly uint ColSlideGlow = Color(0.45f, 0.95f, 0.62f, 0.55f);
 	private static readonly uint ColQueueWindow = Color(0.45f, 0.93f, 0.95f, 0.95f);
 	private static readonly uint ColGapGlow = Color(0.5f, 0.88f, 0.63f, 0.22f);
 	private static readonly uint ColStop = Color(1f, 0.55f, 0.25f, 1f);
+	private static readonly uint ColIntercept = Color(0.78f, 0.45f, 1f, 1f);
+	private static readonly uint ColTagText = Color(0.06f, 0.06f, 0.09f, 1f);
 
 	private Vector2 _lastSavedPos = new(-1, -1);
 
@@ -209,7 +211,8 @@ internal sealed class HimechanHud : Window
 
 		if (slideSafe)
 		{
-			draw.AddCircle(center, r, ColSlideGlow, 48, thick * 2.6f);
+			draw.AddCircle(center, r, ColSlideGlow, 48, thick * 3f);
+			draw.AddCircle(center, r + thick * 1.6f, ColSlideOk, 48, 2f * s);
 			frameColor = ColSlideOk;
 		}
 		else if (centerGcd is { NeedsCast: true, Badge: "다음" })
@@ -296,17 +299,23 @@ internal sealed class HimechanHud : Window
 		{
 			draw.AddRectFilled(pos, max, ColRingBase, 4f);
 		}
-		// A cast-time GCD without Swiftcast: orange frame + "정지" so the player knows to stand still when it fires.
-		var frameCol = entry.NeedsCast ? ColStop : entry.Dim ? ColDim : frame;
-		draw.AddRect(pos, max, frameCol, 4f, ImDrawFlags.None, entry.NeedsCast ? 2f : entry.Dim ? 1f : 1.5f);
-		if (entry.NeedsCast)
+		// Frame: purple right after jumping the stack, orange for a cast-time GCD (stand still when it fires), else as given.
+		var frameCol = entry.Intercepted ? ColIntercept : entry.NeedsCast ? ColStop : entry.Dim ? ColDim : frame;
+		var thickness = entry.Intercepted || entry.NeedsCast ? 2f : entry.Dim ? 1f : 1.5f;
+		draw.AddRect(pos, max, frameCol, 4f, ImDrawFlags.None, thickness);
+
+		// Status tag: a filled strip along the bottom edge of the icon with dark text, so it reads as part of the box.
+		var tag = entry.Intercepted ? "끼어듦" : entry.NeedsCast ? "정지" : null;
+		if (tag != null)
 		{
-			draw.AddRectFilled(new Vector2(pos.X, pos.Y), new Vector2(pos.X + size, pos.Y + 4f), ColStop);
+			var tagSize = ImGui.CalcTextSize(tag) * 0.8f;
+			var tagHeight = tagSize.Y + 2f;
+			draw.AddRectFilled(new Vector2(pos.X + 1f, max.Y - tagHeight - 1f), new Vector2(max.X - 1f, max.Y - 1f), frameCol, 3f, ImDrawFlags.RoundCornersBottom);
+			draw.AddText(font, small, new Vector2(pos.X + (size - tagSize.X) * 0.5f, max.Y - tagHeight), ColTagText, tag);
 		}
 
-		var badge = entry.NeedsCast ? entry.Badge + "·정지" : entry.Badge;
-		var badgeSize = ImGui.CalcTextSize(badge) * 0.8f;
-		draw.AddText(font, small, new Vector2(pos.X + (size - badgeSize.X) * 0.5f, max.Y + 1f), entry.NeedsCast ? ColStop : entry.Dim ? ColDim : ColLabel, badge);
+		var badgeSize = ImGui.CalcTextSize(entry.Badge) * 0.8f;
+		draw.AddText(font, small, new Vector2(pos.X + (size - badgeSize.X) * 0.5f, max.Y + 2f), entry.Dim ? ColDim : ColLabel, entry.Badge);
 	}
 
 	private void SavePositionIfMoved(HimechanSettings settings)

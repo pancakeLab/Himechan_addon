@@ -44,7 +44,7 @@ public sealed partial class WHM_Himechan
 		if (manager != null && manager->ActionQueued && manager->QueuedActionType == ActionType.Action)
 		{
 			var queued = Service.GetAdjustedActionId(manager->QueuedActionId);
-			if (queued != centerId && IsGcdActionId(queued))
+			if (IsGcdActionId(queued) && (center is not { Badge: "다음" } || queued != centerId))
 			{
 				list.Add(new HudEntry(queued, false, 0, ActionLabel(queued), "선입력", false, NeedsCastFor(queued)));
 			}
@@ -71,14 +71,9 @@ public sealed partial class WHM_Himechan
 			list.Add(new HudEntry(command.AdjustedID, false, 0, command.Name, "명령", false, NeedsCastFor(command.AdjustedID)));
 		}
 
-		// Stored GCD presses (#36) fire after everything Himechan planned, in press order.
-		foreach (var e in HudGcdQueueEntries())
-		{
-			if (e.ActionId != centerId)
-			{
-				list.Add(e);
-			}
-		}
+		// Stored GCD presses (#36) fire after everything Himechan planned, in press order. They are separate presses, so a
+		// stored Glare is shown even while Glare is being cast (game test 2026-10-14: it was hidden until the cast ended).
+		list.AddRange(HudGcdQueueEntries());
 
 		return list;
 	}

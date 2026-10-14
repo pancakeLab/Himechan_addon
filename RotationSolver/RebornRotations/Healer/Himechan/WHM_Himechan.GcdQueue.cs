@@ -17,17 +17,27 @@ public sealed partial class WHM_Himechan
 	private const double GcdQueueLifetime = 8.0;
 	private const float GameQueueWindow = 0.5f;
 
+	// User request 2026-10-14: a rapid double press (two presses of the same GCD closer than this) jumps the stack:
+	// the entry that would fire next is dropped and the pressed GCD takes its place. Himechan's own Dia refresh is not in
+	// the stack and keeps going first.
+	[Range(50f, 400f, ConfigUnitType.None, 10f)]
+	[RotationConfig(CombatType.PvE, Name = "GCD 빠른 연타 인터셉트 기준 (ms): 같은 GCD를 이 간격 안에 두 번 누르면 다음 선입력을 밀어내고 앞에 섬", Parent = nameof(GcdInputQueue), ParentValue = true)]
+	public float GcdInterceptMs { get; set; } = 150f;
+
 	private sealed class QueuedGcd
 	{
 		public uint Id;
 		public ulong Target;
 		public double Expire;
 		public string Label = string.Empty;
+		public double InterceptedAt = double.MinValue; // HUD: purple for a moment after jumping the stack
 	}
 
 	private readonly List<QueuedGcd> _gcdQueue = [];
 	private bool _gcdReplaying;
 	private double _gcdInFlightUntil;
+	private uint _lastGcdPressId;
+	private double _lastGcdPressAt = double.MinValue;
 
 	internal bool GcdQueueActive => GcdInputQueue && IsEnabled && DataCenter.State && !DataCenter.IsPvP;
 	internal int GcdQueueCount => _gcdQueue.Count;
@@ -36,10 +46,11 @@ public sealed partial class WHM_Himechan
 	internal List<HudEntry> HudGcdQueueEntries()
 	{
 		List<HudEntry> list = [];
+		var now = Now;
 		foreach (var q in _gcdQueue)
 		{
 			var adjusted = Service.GetAdjustedActionId(q.Id);
-			list.Add(new HudEntry(adjusted, false, 0, q.Label, "선입력", false, NeedsCastFor(adjusted)));
+			list.Add(new HudEntry(adjusted, false, 0, q.Label, "선입력", false, NeedsCastFor(adjusted), now - q.InterceptedAt < 1.0));
 		}
 		return list;
 	}
@@ -111,6 +122,35 @@ public sealed partial class WHM_Himechan
 				return false; // The game takes it now (its own queue window).
 			}
 
+			var now = Now;
+			var rapid = _lastGcdPressId == actionId && (now - _lastGcdPressAt) * 1000.0 < Math.Clamp(GcdInterceptMs, 50f, 400f);
+			_lastGcdPressId = actionId;
+			_lastGcdPressAt = now;
+
+			var label = ActionLabel(adjusted);
+			if (rapid && _gcdQueue.Count > 0 && _gcdQueue[0].Id != actionId)
+			{
+				// Jump the stack: drop what would fire next, put this press in front (an existing later copy moves up).
+				var victim = _gcdQueue[0];
+				_gcdQueue.RemoveAt(0);
+				RecordHimechanDiagnostic($"GCD Q INTERCEPT {label}({adjusted}) drops {victim.Label}({victim.Id})");
+				var existing = _gcdQueue.FindIndex(q => q.Id == actionId);
+				QueuedGcd entry;
+				if (existing >= 0)
+				{
+					entry = _gcdQueue[existing];
+					_gcdQueue.RemoveAt(existing);
+				}
+				else
+				{
+					entry = new QueuedGcd { Id = actionId, Label = label, Expire = now + GcdQueueLifetime };
+				}
+				entry.Target = targetObjectId;
+				entry.InterceptedAt = now;
+				_gcdQueue.Insert(0, entry);
+				return true;
+			}
+
 			foreach (var q in _gcdQueue)
 			{
 				if (q.Id == actionId)
@@ -119,15 +159,13 @@ public sealed partial class WHM_Himechan
 					return true; // Held key: one entry per action.
 				}
 			}
-
-			var label = ActionLabel(adjusted);
 			if (_gcdQueue.Count >= GcdQueueMax)
 			{
 				RecordHimechanDiagnostic($"GCD Q FULL drop {label}({adjusted})");
 				return true;
 			}
 
-			_gcdQueue.Add(new QueuedGcd { Id = actionId, Target = targetObjectId, Expire = Now + GcdQueueLifetime, Label = label });
+			_gcdQueue.Add(new QueuedGcd { Id = actionId, Target = targetObjectId, Expire = now + GcdQueueLifetime, Label = label });
 			RecordHimechanDiagnostic($"GCD Q ADD {label}({adjusted}) target=0x{targetObjectId:X} why={reason} gcd={remain:F2} n={_gcdQueue.Count}");
 			return true;
 		}

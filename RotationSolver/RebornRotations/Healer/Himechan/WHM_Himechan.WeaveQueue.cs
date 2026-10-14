@@ -148,7 +148,7 @@ public sealed partial class WHM_Himechan
 	}
 
 	/// <summary>One line of the HUD's stacks. NeedsCast: a cast-time GCD without Swiftcast, so the player must stand still when it fires.</summary>
-	internal readonly record struct HudEntry(uint ActionId, bool IsItem, uint IconId, string Label, string Badge, bool Dim, bool NeedsCast = false);
+	internal readonly record struct HudEntry(uint ActionId, bool IsItem, uint IconId, string Label, string Badge, bool Dim, bool NeedsCast = false, bool Intercepted = false);
 
 	/// <summary>Queue entries in firing order (priority, then press order), followed by RSR's command ability and the next automatic candidate.</summary>
 	internal List<HudEntry> HudQueueEntries()
