@@ -38,6 +38,8 @@ public sealed partial class WHM_Himechan
 	private double _gcdInFlightUntil;
 	private uint _lastGcdPressId;
 	private double _lastGcdPressAt = double.MinValue;
+	private uint _lastGcdUsedId;
+	private double _lastGcdUsedAt = double.MinValue;
 
 	internal bool GcdQueueActive => GcdInputQueue && IsEnabled && DataCenter.State && !DataCenter.IsPvP;
 	internal int GcdQueueCount => _gcdQueue.Count;
@@ -119,7 +121,15 @@ public sealed partial class WHM_Himechan
 				: null;
 			if (reason == null)
 			{
+				_lastGcdUsedId = actionId;
+				_lastGcdUsedAt = Now;
 				return false; // The game takes it now (its own queue window).
+			}
+
+			// Repeated macro lines right after the same GCD was handed to the game: dropped, as the game itself would.
+			if (actionId == _lastGcdUsedId && Now - _lastGcdUsedAt < WHMHimechanPolicy.RepeatDebounce)
+			{
+				return true;
 			}
 
 			var now = Now;
@@ -237,6 +247,8 @@ public sealed partial class WHM_Himechan
 		// Short guard only: while the game holds it, ActionQueued blocks the next replay; once it fired, the restarted GCD
 		// (remaining > queue window) does. A guard of "remaining GCD + 0.3s" here lengthened every GCD by ~0.3s (log 2026-10-14).
 		_gcdInFlightUntil = now + 0.6;
+		_lastGcdUsedId = head.Id;
+		_lastGcdUsedAt = now;
 		RecordHimechanDiagnostic($"GCD Q REPLAY {head.Label}({head.Id}) target=0x{head.Target:X} gcd={DataCenter.DefaultGCDRemain:F2} left={_gcdQueue.Count}");
 		return false;
 	}

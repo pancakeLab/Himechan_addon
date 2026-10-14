@@ -131,6 +131,10 @@ internal static class WHMHimechanPolicy
 	/// <summary>Emergency actions that may bypass the queue (per-option, default on): Benediction, Rescue. Ground-targeted actions are queued only with a valid target (macro &lt;me&gt; etc.).</summary>
 	internal const uint BenedictionId = 140;
 	internal const uint RescueId = 7571;
+	/// <summary>Liturgy of the Bell after placement: the same button becomes the "ring it now" action.</summary>
+	internal const uint LiturgyRingId = 28509;
+	/// <summary>Repeated presses of an action within this many seconds after it went out are dropped, as the game does during the animation lock.</summary>
+	internal const double RepeatDebounce = 0.8;
 
 	/// <summary>A stored press is dropped when it could not be replayed within this many seconds (about two GCD cycles).</summary>
 	internal const double WeaveQueueLifetime = 6.0;

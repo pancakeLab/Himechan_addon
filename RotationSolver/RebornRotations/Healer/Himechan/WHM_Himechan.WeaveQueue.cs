@@ -287,11 +287,22 @@ public sealed partial class WHM_Himechan
 				return false;
 			}
 
+			// Repeated macro lines / a held key right after the same ability went out: the game drops them during the
+			// animation lock, so do we (bug 2026-10-14: the second line of a Liturgy of the Bell macro was stored and then
+			// replayed as the bell's second use, spending the heal at once).
+			if (actionId == _lastAbilityUsedId && Now - _lastAbilityUsedAt < WHMHimechanPolicy.RepeatDebounce)
+			{
+				return true;
+			}
+
 			var validTarget = targetObjectId != 0 && targetObjectId != 0xE0000000;
 			var exempt = (adjusted == WHMHimechanPolicy.BenedictionId && BenedictionBypassesQueue)
 				|| (adjusted == WHMHimechanPolicy.RescueId && RescueBypassesQueue);
-			if (exempt || (groundTarget && !validTarget))
+			if (exempt || (groundTarget && !validTarget) || adjusted == WHMHimechanPolicy.LiturgyRingId)
 			{
+				// The bell's second use (28509) is never stored: it is an instant emergency press, and storing it is how the
+				// bell got rung by accident.
+				NoteAbilityUsed(actionId);
 				MarkWeaveUsed("player-exempt", adjusted);
 				return false;
 			}
@@ -313,6 +324,7 @@ public sealed partial class WHM_Himechan
 				: null;
 			if (reason == null)
 			{
+				NoteAbilityUsed(actionId);
 				MarkWeaveUsed("player", adjusted);
 				return false;
 			}
@@ -510,9 +522,19 @@ public sealed partial class WHM_Himechan
 			return false;
 		}
 
+		NoteAbilityUsed(head.Id);
 		MarkWeaveUsed("replay", head.Id);
 		RecordHimechanDiagnostic($"WEAVE Q REPLAY {head.Label}({head.Id}) target=0x{head.Target:X} gcd={remain:F2} left={_weaveQueue.Count}");
 		return true;
+	}
+
+	private uint _lastAbilityUsedId;
+	private double _lastAbilityUsedAt = double.MinValue;
+
+	private void NoteAbilityUsed(uint actionId)
+	{
+		_lastAbilityUsedId = actionId;
+		_lastAbilityUsedAt = Now;
 	}
 
 	private void DropQueued(int index, string reason)
