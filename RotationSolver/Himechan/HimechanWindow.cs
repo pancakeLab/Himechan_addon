@@ -124,6 +124,17 @@ internal sealed class HimechanWindow : Window
 			HimechanSettings.Save();
 		}
 
+		var queueWindow = settings.HudQueueWindow;
+		ImGui.SetNextItemWidth(200);
+		if (ImGui.SliderFloat("선입력 마감 표시 (GCD 종료 전, 초)", ref queueWindow, 0.1f, 1.5f, "%.2f"))
+		{
+			settings.HudQueueWindow = queueWindow;
+		}
+		if (ImGui.IsItemDeactivatedAfterEdit())
+		{
+			HimechanSettings.Save();
+		}
+
 		if (ImGui.Button("HUD 위치 초기화 (화면 중앙 아래)"))
 		{
 			settings.HudPosX = -1f;

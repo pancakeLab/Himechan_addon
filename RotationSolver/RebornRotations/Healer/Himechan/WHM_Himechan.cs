@@ -675,6 +675,12 @@ public sealed partial class WHM_Himechan : WhiteMageRotation
 			return false;
 		}
 
+		// A pending Solace request is a Himechan-planned GCD too (game test 2026-10-14: Glare presses starved it).
+		if (_solaceRequest)
+		{
+			return true;
+		}
+
 		var next = RotationSolver.Updaters.ActionUpdater.NextGCDAction;
 		if (next == null || !((ActionID)next.AdjustedID is ActionID.DiaPvE or ActionID.AeroIiPvE or ActionID.AeroPvE))
 		{

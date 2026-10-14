@@ -66,6 +66,7 @@ internal static class HimechanHooks
 				stopped.StopManualRaise("RSR 종료");
 				stopped.StopOpener("RSR 종료");
 				stopped.ClearWeaveQueue("RSR 종료");
+				stopped.ClearGcdQueue("RSR 종료");
 			}
 			_lastState = state;
 
@@ -126,6 +127,8 @@ internal static class HimechanHooks
 				return true;
 			}
 
+			_ = whm.TryReplayGcd(); // #36: feeds the game queue, never holds RSR
+
 			if (whm.TrySolaceRequest(out next, out gcd))
 			{
 				return true;
@@ -163,9 +166,14 @@ internal static class HimechanHooks
 				return true;
 			}
 
-			if (actionType == 1 && whm.ShouldDeferFillerForDot(actionType, Service.GetAdjustedActionId(actionId)))
+			if (actionType == 1 && !whm.GcdQueueActive && whm.ShouldDeferFillerForDot(actionType, Service.GetAdjustedActionId(actionId)))
 			{
-				return true;
+				return true; // #18 fallback when the GCD stack (#36) is off
+			}
+
+			if (whm.OnPlayerGcdInput(actionType, actionId, targetObjectId, useType))
+			{
+				return true; // #36: stored in the GCD stack
 			}
 
 			if (whm.TryRedirectAttackInput(actionType, actionId, targetObjectId, useType))

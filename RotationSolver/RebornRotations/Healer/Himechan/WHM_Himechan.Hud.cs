@@ -71,7 +71,36 @@ public sealed partial class WHM_Himechan
 			list.Add(new HudEntry(command.AdjustedID, false, 0, command.Name, "명령", false));
 		}
 
+		// Stored GCD presses (#36) fire after everything Himechan planned, in press order.
+		foreach (var e in HudGcdQueueEntries())
+		{
+			if (e.ActionId != centerId)
+			{
+				list.Add(e);
+			}
+		}
+
 		return list;
+	}
+
+	/// <summary>How many abilities can still go into the current gap: lights up that many oGCD slots.</summary>
+	internal int HudGapPlaces
+	{
+		get
+		{
+			if (!WeaveQueueActive || !InCombat)
+			{
+				return 1;
+			}
+
+			if (WeaveSlotFree)
+			{
+				var remain = DataCenter.DefaultGCDRemain;
+				return DoubleWeaveInWideGap && remain >= Math.Clamp(WideGapMinimum, 1.0f, 2.5f) ? 2 : 1;
+			}
+
+			return WeaveSecondSlotFree ? 1 : 0;
+		}
 	}
 
 	/// <summary>Extra oGCD lines beyond the weave queue: the game's queued ability input and the held-back automatic candidate.</summary>

@@ -1,0 +1,200 @@
+using ECommons.DalamudServices;
+using FFXIVClientStructs.FFXIV.Client.Game;
+using LuminaAction = Lumina.Excel.Sheets.Action;
+
+namespace RotationSolver.RebornRotations.Healer;
+
+// Spec #36 (user request 2026-10-14): GCD input stack. The game queues only one input; Himechan stores up to three GCD
+// presses and feeds them in press order, one per GCD, into the game's queue window. GCDs that Himechan itself plans
+// (Dia refresh, Solace request, RSR's next GCD) go first, so a stored press can never starve them (game test 2026-10-14:
+// Glare presses kept the game queue busy and the Solace request expired unused, Dia refreshed late).
+public sealed partial class WHM_Himechan
+{
+	[RotationConfig(CombatType.PvE, Name = "GCD 선입력 스택 (최대 3개, 누른 순서. 히메짱이 계획한 GCD(디아 갱신·백합 요청)가 먼저)")]
+	public bool GcdInputQueue { get; set; } = true;
+
+	private const int GcdQueueMax = 3;
+	private const double GcdQueueLifetime = 8.0;
+	private const float GameQueueWindow = 0.5f;
+
+	private sealed class QueuedGcd
+	{
+		public uint Id;
+		public ulong Target;
+		public double Expire;
+		public string Label = string.Empty;
+	}
+
+	private readonly List<QueuedGcd> _gcdQueue = [];
+	private bool _gcdReplaying;
+	private double _gcdInFlightUntil;
+
+	internal bool GcdQueueActive => GcdInputQueue && IsEnabled && DataCenter.State && !DataCenter.IsPvP;
+	internal int GcdQueueCount => _gcdQueue.Count;
+
+	/// <summary>HUD lines for the stored GCD presses, in firing order.</summary>
+	internal List<HudEntry> HudGcdQueueEntries()
+	{
+		List<HudEntry> list = [];
+		foreach (var q in _gcdQueue)
+		{
+			list.Add(new HudEntry(Service.GetAdjustedActionId(q.Id), false, 0, q.Label, "선입력", false));
+		}
+		return list;
+	}
+
+	/// <summary>
+	/// A Himechan-planned GCD is pending (Solace request, managed DoT refresh): stored presses wait behind it.
+	/// RSR's ordinary planned GCD (Auto mode) is not counted, otherwise presses would never be released there.
+	/// </summary>
+	private bool PlannedGcdPending
+	{
+		get
+		{
+			if (_solaceRequest || Now < _solaceInFlightUntil)
+			{
+				return true;
+			}
+
+			var next = RotationSolver.Updaters.ActionUpdater.NextGCDAction;
+			return next != null && (ActionID)next.AdjustedID is ActionID.DiaPvE or ActionID.AeroIiPvE or ActionID.AeroPvE
+				&& !(next.Target.Target is { } target && IsExcludedFromAutoDia(target));
+		}
+	}
+
+	/// <summary>
+	/// UseActionDetour: a hotbar / macro GCD press. Passes through when the game would take it right now (queue window,
+	/// nothing stored, nothing planned); otherwise it is stored (max 3, repeats ignored) and rejected.
+	/// </summary>
+	internal bool OnPlayerGcdInput(uint actionType, uint actionId, ulong targetObjectId, uint useType)
+	{
+		try
+		{
+			if (_gcdReplaying || actionType != 1 || useType == 1 || !GcdQueueActive || !InCombat || OpenerOwnsInput || _manualRaise)
+			{
+				return false;
+			}
+
+			var adjusted = Service.GetAdjustedActionId(actionId);
+			if (!IsGcdActionId(adjusted))
+			{
+				return false;
+			}
+
+			var remain = DataCenter.DefaultGCDRemain;
+			var casting = Player?.IsCasting == true;
+			var reason = _gcdQueue.Count > 0 ? "queue"
+				: PlannedGcdPending ? "planned"
+				: casting ? "casting"
+				: remain > GameQueueWindow ? "early"
+				: null;
+			if (reason == null)
+			{
+				return false; // The game takes it now (its own queue window).
+			}
+
+			foreach (var q in _gcdQueue)
+			{
+				if (q.Id == actionId)
+				{
+					q.Target = targetObjectId;
+					return true; // Held key: one entry per action.
+				}
+			}
+
+			var label = ActionLabel(adjusted);
+			if (_gcdQueue.Count >= GcdQueueMax)
+			{
+				RecordHimechanDiagnostic($"GCD Q FULL drop {label}({adjusted})");
+				return true;
+			}
+
+			_gcdQueue.Add(new QueuedGcd { Id = actionId, Target = targetObjectId, Expire = Now + GcdQueueLifetime, Label = label });
+			RecordHimechanDiagnostic($"GCD Q ADD {label}({adjusted}) target=0x{targetObjectId:X} why={reason} gcd={remain:F2} n={_gcdQueue.Count}");
+			return true;
+		}
+		catch (Exception ex)
+		{
+			ECommons.Logging.PluginLog.Warning($"[Himechan] GCD queue input check failed, input passed through: {ex.Message}");
+			return false;
+		}
+	}
+
+	/// <summary>Priority step in UpdateNextAction: hand the head of the stack to the game queue when the window opens. Never holds RSR.</summary>
+	internal unsafe bool TryReplayGcd()
+	{
+		if (_gcdQueue.Count == 0)
+		{
+			return false;
+		}
+
+		if (!GcdQueueActive || OpenerOwnsInput || _manualRaise)
+		{
+			ClearGcdQueue("상태 변경");
+			return false;
+		}
+
+		var now = Now;
+		while (_gcdQueue.Count > 0 && now > _gcdQueue[0].Expire)
+		{
+			DropGcd(0, "시간 초과");
+		}
+
+		if (_gcdQueue.Count == 0 || now < _gcdInFlightUntil || PlannedGcdPending)
+		{
+			return false;
+		}
+
+		var head = _gcdQueue[0];
+		if (head.Target != 0 && head.Target != 0xE0000000
+			&& (Svc.Objects.SearchById(head.Target) is not IBattleChara target || target.IsDead))
+		{
+			DropGcd(0, "대상 없음");
+			return false;
+		}
+
+		var manager = ActionManager.Instance();
+		if (manager == null || manager->ActionQueued || DataCenter.DefaultGCDRemain > GameQueueWindow)
+		{
+			return false;
+		}
+
+		bool ok;
+		_gcdReplaying = true;
+		try
+		{
+			// Goes through the input hook again: the smart target (#33) may still fix the target.
+			ok = manager->UseAction(ActionType.Action, head.Id, head.Target);
+		}
+		finally
+		{
+			_gcdReplaying = false;
+		}
+
+		_gcdQueue.RemoveAt(0);
+		if (!ok)
+		{
+			RecordHimechanDiagnostic($"GCD Q REJECTED {head.Label}({head.Id})");
+			return false;
+		}
+
+		_gcdInFlightUntil = now + DataCenter.DefaultGCDRemain + 0.3;
+		RecordHimechanDiagnostic($"GCD Q REPLAY {head.Label}({head.Id}) target=0x{head.Target:X} gcd={DataCenter.DefaultGCDRemain:F2} left={_gcdQueue.Count}");
+		return false;
+	}
+
+	private void DropGcd(int index, string reason)
+	{
+		var q = _gcdQueue[index];
+		_gcdQueue.RemoveAt(index);
+		RecordHimechanDiagnostic($"GCD Q DROP {q.Label}({q.Id}): {reason}");
+	}
+
+	internal void ClearGcdQueue(string reason)
+	{
+		while (_gcdQueue.Count > 0)
+		{
+			DropGcd(0, reason);
+		}
+	}
+}

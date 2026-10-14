@@ -40,6 +40,10 @@ internal sealed class HimechanHud : Window
 	private static readonly uint ColFrameHead = Color(1f, 0.88f, 0.54f, 1f);
 	private static readonly uint ColPanel = Color(0.04f, 0.05f, 0.08f, 0.55f);
 	private static readonly uint ColUnlocked = Color(1f, 0.83f, 0.30f, 0.9f);
+	private static readonly uint ColRingSafe = Color(0.16f, 0.36f, 0.26f, 0.95f);
+	private static readonly uint ColSlideGlow = Color(0.5f, 0.88f, 0.63f, 0.28f);
+	private static readonly uint ColQueueWindow = Color(0.45f, 0.93f, 0.95f, 0.95f);
+	private static readonly uint ColGapGlow = Color(0.5f, 0.88f, 0.63f, 0.22f);
 
 	private Vector2 _lastSavedPos = new(-1, -1);
 
@@ -139,25 +143,41 @@ internal sealed class HimechanHud : Window
 		var rowY = center.Y - SmallIcon * 0.5f * s;
 		draw.AddText(font, small, new Vector2(origin.X + 6f * s, rowY - small - 2f * s), ColLabel, "예약 GCD");
 		var x = center.X - ringBox * 0.5f - 12f * s - SmallIcon * s;
-		for (var i = 0; i < Math.Min(reserved.Count, MaxReserved); i++)
+		for (var i = 0; i < MaxReserved; i++)
 		{
-			DrawIcon(draw, new Vector2(x, rowY), SmallIcon * s, reserved[i], ColFrame, font, small);
-			x -= (SmallIcon + Gap) * s;
-		}
-
-		// oGCD queue (right).
-		var queue = whm.HudQueueEntries();
-		x = center.X + ringBox * 0.5f + 12f * s;
-		draw.AddText(font, small, new Vector2(x, rowY - small - 2f * s), ColLabel, "예약 oGCD (우선순위 순)");
-		for (var i = 0; i < MaxQueue; i++)
-		{
-			if (i < queue.Count)
+			if (i < reserved.Count)
 			{
-				DrawIcon(draw, new Vector2(x, rowY), SmallIcon * s, queue[i], i == 0 && !queue[i].Dim ? ColFrameHead : ColFrame, font, small);
+				DrawIcon(draw, new Vector2(x, rowY), SmallIcon * s, reserved[i], i == 0 ? ColFrameNext : ColFrame, font, small);
 			}
 			else
 			{
 				draw.AddRect(new Vector2(x, rowY), new Vector2(x + SmallIcon * s, rowY + SmallIcon * s), ColDim, 4f * s);
+			}
+			x -= (SmallIcon + Gap) * s;
+		}
+
+		// oGCD queue (right). The first HudGapPlaces slots glow: that many abilities still fit into the current gap.
+		var queue = whm.HudQueueEntries();
+		var places = whm.HudGapPlaces;
+		x = center.X + ringBox * 0.5f + 12f * s;
+		draw.AddText(font, small, new Vector2(x, rowY - small - 2f * s), ColLabel, "예약 oGCD (우선순위 순)");
+		for (var i = 0; i < MaxQueue; i++)
+		{
+			var pos = new Vector2(x, rowY);
+			var max = pos + new Vector2(SmallIcon * s, SmallIcon * s);
+			var open = i < places;
+			if (open)
+			{
+				draw.AddRectFilled(pos - new Vector2(2f * s), max + new Vector2(2f * s), ColGapGlow, 6f * s);
+			}
+
+			if (i < queue.Count)
+			{
+				DrawIcon(draw, pos, SmallIcon * s, queue[i], open ? ColSlideOk : ColFrame, font, small);
+			}
+			else
+			{
+				draw.AddRect(pos, max, open ? ColSlideOk : ColDim, 4f * s, ImDrawFlags.None, open ? 1.5f : 1f);
 			}
 			x += (SmallIcon + Gap) * s;
 		}
@@ -175,7 +195,24 @@ internal sealed class HimechanHud : Window
 		var frac = total > 0f ? elapsed / total : 0f;
 		const float start = -MathF.PI / 2f;
 
-		draw.AddCircle(center, r, ColRingBase, 48, thick);
+		// Slidecast state first: when it is safe to move, the whole ring glows green.
+		var player = Player.Object;
+		var frameColor = ColFrameNext;
+		var slideSafe = false;
+		var castLeft = 0f;
+		if (player != null && player.IsCasting && total > 0f)
+		{
+			castLeft = player.TotalCastTime - player.CurrentCastTime;
+			slideSafe = castLeft <= Math.Clamp(settings.HudSlidecastWindow, 0f, 2f);
+		}
+
+		if (slideSafe)
+		{
+			draw.AddCircle(center, r, ColSlideGlow, 48, thick * 2.6f);
+			frameColor = ColSlideOk;
+		}
+
+		draw.AddCircle(center, r, slideSafe ? ColRingSafe : ColRingBase, 48, thick);
 
 		// No-weave zone: the last ManualWeaveTail seconds of the GCD.
 		if (total > 0f)
@@ -192,18 +229,23 @@ internal sealed class HimechanHud : Window
 			draw.PathStroke(ColRingElapsed, ImDrawFlags.None, thick);
 		}
 
-		// Slidecast: tick where the cast will be safe to leave, green frame once it is.
-		var player = Player.Object;
-		var frameColor = ColFrameNext;
+		// Input deadline: the game's queue window (last HudQueueWindow seconds) as a thin inner arc with a tick at its start.
+		if (total > 0f)
+		{
+			var window = Math.Clamp(settings.HudQueueWindow, 0.1f, 1.5f);
+			var from = start + MathF.Tau * (1f - window / total);
+			var inner = r - thick * 0.5f - 2f * s;
+			draw.PathArcTo(center, inner, from, start + MathF.Tau, 16);
+			draw.PathStroke(ColQueueWindow, ImDrawFlags.None, 2f * s);
+			var dir = new Vector2(MathF.Cos(from), MathF.Sin(from));
+			draw.AddLine(center + dir * (inner - 4f * s), center + dir * (r + thick * 0.5f), ColQueueWindow, 2f * s);
+		}
+
+		// Slidecast tick where the cast will become safe to leave.
 		if (player != null && player.IsCasting && total > 0f)
 		{
-			var castLeft = player.TotalCastTime - player.CurrentCastTime;
 			var slide = Math.Clamp(settings.HudSlidecastWindow, 0f, 2f);
-			if (castLeft <= slide)
-			{
-				frameColor = ColSlideOk;
-			}
-			else
+			if (!slideSafe)
 			{
 				var at = Math.Clamp((elapsed + castLeft - slide) / total, 0f, 1f);
 				var a = start + MathF.Tau * at;
@@ -226,15 +268,15 @@ internal sealed class HimechanHud : Window
 			draw.AddText(font, small, new Vector2(center.X - bsize.X * 0.5f, center.Y - r - thick - small - 2f * s), ColLabel, badge.Badge);
 		}
 
-		// Time and gap text under the ring.
+		// Time under the ring (gap usage is shown on the oGCD slots themselves).
 		var timeText = remain > 0f ? $"{remain:F2}s" : "준비";
 		var size = ImGui.CalcTextSize(timeText) * s;
 		draw.AddText(font, fontSize, new Vector2(center.X - size.X * 0.5f, center.Y + r + thick + 2f * s), ColText, timeText);
-		var gap = whm.HudGapText;
-		if (gap.Length > 0)
+		if (slideSafe)
 		{
-			var gsize = ImGui.CalcTextSize(gap) * 0.8f * s;
-			draw.AddText(font, small, new Vector2(center.X - gsize.X * 0.5f, center.Y + r + thick + 2f * s + fontSize), ColSlideOk, gap);
+			const string moveText = "이동 가능";
+			var msize = ImGui.CalcTextSize(moveText) * 0.8f * s;
+			draw.AddText(font, small, new Vector2(center.X - msize.X * 0.5f, center.Y + r + thick + 2f * s + fontSize), ColSlideOk, moveText);
 		}
 	}
 

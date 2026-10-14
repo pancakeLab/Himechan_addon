@@ -35,6 +35,9 @@ internal sealed class HimechanSettings
 	/// <summary>Slidecast window: moving is safe once this much of the cast is left (seconds).</summary>
 	public float HudSlidecastWindow { get; set; } = 0.5f;
 
+	/// <summary>Input deadline marker: the game's queue window opens this many seconds before the GCD ends.</summary>
+	public float HudQueueWindow { get; set; } = 0.5f;
+
 	/// <summary>Saved window position (screen pixels); negative = not placed yet (centered above the cast bar).</summary>
 	public float HudPosX { get; set; } = -1f;
 	public float HudPosY { get; set; } = -1f;
