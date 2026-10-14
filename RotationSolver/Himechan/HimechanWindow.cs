@@ -115,20 +115,9 @@ internal sealed class HimechanWindow : Window
 
 		var slide = settings.HudSlidecastWindow;
 		ImGui.SetNextItemWidth(200);
-		if (ImGui.SliderFloat("슬라이드 캐스팅 안전선 (시전 종료 전, 초)", ref slide, 0.2f, 1.0f, "%.2f"))
+		if (ImGui.SliderFloat("이동·선입력 가능 시작 (시전 종료 전, 초)", ref slide, 0.2f, 1.0f, "%.2f"))
 		{
 			settings.HudSlidecastWindow = slide;
-		}
-		if (ImGui.IsItemDeactivatedAfterEdit())
-		{
-			HimechanSettings.Save();
-		}
-
-		var queueWindow = settings.HudQueueWindow;
-		ImGui.SetNextItemWidth(200);
-		if (ImGui.SliderFloat("선입력 마감 표시 (GCD 종료 전, 초)", ref queueWindow, 0.1f, 1.5f, "%.2f"))
-		{
-			settings.HudQueueWindow = queueWindow;
 		}
 		if (ImGui.IsItemDeactivatedAfterEdit())
 		{
@@ -141,7 +130,7 @@ internal sealed class HimechanWindow : Window
 			settings.HudPosY = -1f;
 			HimechanSettings.Save();
 		}
-		ImGui.TextWrapped("링: 파랑 = 지난 GCD, 빨강 = 위빙 불가 구간, 노란 눈금 = 슬라이드 캐스팅 안전선(도달하면 가운데 테두리가 초록). 왼쪽 = 예약 GCD(명령·백합 요청), 오른쪽 = 대기 oGCD(우선순위 순, 흐린 칸 = 다음 자동 후보).");
+		ImGui.TextWrapped("링: 파랑 = 지난 GCD, 빨강 = 위빙 불가 구간, 안쪽 초록 호 = 이동·다음 GCD 선입력이 가능한 구간(시작점에 노란 눈금, 구간에 들어가면 링 전체가 초록). 왼쪽 = 예약 GCD(다음·요청·명령·선입력), 오른쪽 = 대기 oGCD(우선순위 순, 초록 칸 수 = 이번 틈에 더 들어갈 수, 흐린 칸 = 다음 자동 후보). 주황 테두리 + \"정지\" = 시전이 필요한 GCD.");
 
 		ImGui.Separator();
 		ImGui.TextUnformatted("디버그 · 테스트");

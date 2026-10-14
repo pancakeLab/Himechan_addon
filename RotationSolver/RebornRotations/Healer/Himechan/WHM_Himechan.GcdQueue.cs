@@ -90,7 +90,17 @@ public sealed partial class WHM_Himechan
 			}
 
 			var remain = DataCenter.DefaultGCDRemain;
-			var casting = Player?.IsCasting == true;
+			var player = Player;
+			var casting = player?.IsCasting == true;
+
+			// User decision 2026-10-14: during a cast, presses are accepted from the slidecast point on (the same moment moving
+			// becomes safe). Earlier presses pass through untouched, which the game ignores as it always did.
+			if (casting && player != null
+				&& player.TotalCastTime - player.CurrentCastTime > Math.Clamp(RotationSolver.Himechan.HimechanSettings.Current.HudSlidecastWindow, 0f, 2f))
+			{
+				return false;
+			}
+
 			var reason = _gcdQueue.Count > 0 ? "queue"
 				: PlannedGcdPending ? "planned"
 				: casting ? "casting"

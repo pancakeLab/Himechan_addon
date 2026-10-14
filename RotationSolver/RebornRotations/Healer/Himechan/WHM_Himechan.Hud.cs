@@ -31,7 +31,7 @@ public sealed partial class WHM_Himechan
 		}
 
 		var next = RotationSolver.Updaters.ActionUpdater.NextGCDAction;
-		return next != null ? new HudEntry(next.AdjustedID, false, 0, next.Name, "다음", false) : null;
+		return next != null ? new HudEntry(next.AdjustedID, false, 0, next.Name, "다음", false, NeedsCastFor(next.AdjustedID)) : null;
 	}
 
 	/// <summary>Reserved GCDs after the centre: the game's own queued input, RSR's next GCD, the Solace request, the RSR command GCD.</summary>
@@ -46,7 +46,7 @@ public sealed partial class WHM_Himechan
 			var queued = Service.GetAdjustedActionId(manager->QueuedActionId);
 			if (queued != centerId && IsGcdActionId(queued))
 			{
-				list.Add(new HudEntry(queued, false, 0, ActionLabel(queued), "선입력", false));
+				list.Add(new HudEntry(queued, false, 0, ActionLabel(queued), "선입력", false, NeedsCastFor(queued)));
 			}
 		}
 

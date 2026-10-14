@@ -212,6 +212,10 @@ internal sealed class HimechanHud : Window
 			draw.AddCircle(center, r, ColSlideGlow, 48, thick * 2.6f);
 			frameColor = ColSlideOk;
 		}
+		else if (centerGcd is { NeedsCast: true, Badge: "다음" })
+		{
+			frameColor = ColStop; // The next GCD needs a cast: stand still when it fires.
+		}
 
 		draw.AddCircle(center, r, slideSafe ? ColRingSafe : ColRingBase, 48, thick);
 
@@ -230,29 +234,18 @@ internal sealed class HimechanHud : Window
 			draw.PathStroke(ColRingElapsed, ImDrawFlags.None, thick);
 		}
 
-		// Input deadline: the game's queue window (last HudQueueWindow seconds) as a thin inner arc with a tick at its start.
-		if (total > 0f)
-		{
-			var window = Math.Clamp(settings.HudQueueWindow, 0.1f, 1.5f);
-			var from = start + MathF.Tau * (1f - window / total);
-			var inner = r - thick * 0.5f - 2f * s;
-			draw.PathArcTo(center, inner, from, start + MathF.Tau, 16);
-			draw.PathStroke(ColQueueWindow, ImDrawFlags.None, 2f * s);
-			var dir = new Vector2(MathF.Cos(from), MathF.Sin(from));
-			draw.AddLine(center + dir * (inner - 4f * s), center + dir * (r + thick * 0.5f), ColQueueWindow, 2f * s);
-		}
-
-		// Slidecast tick where the cast will become safe to leave.
+		// One window (user decision 2026-10-14): from the slidecast point of the current cast to the end of the GCD you may
+		// move AND your next GCD press is accepted into the stack. Drawn as an inner green arc with a tick at its start.
 		if (player != null && player.IsCasting && total > 0f)
 		{
 			var slide = Math.Clamp(settings.HudSlidecastWindow, 0f, 2f);
-			if (!slideSafe)
-			{
-				var at = Math.Clamp((elapsed + castLeft - slide) / total, 0f, 1f);
-				var a = start + MathF.Tau * at;
-				var dir = new Vector2(MathF.Cos(a), MathF.Sin(a));
-				draw.AddLine(center + dir * (r - thick), center + dir * (r + thick), ColSlide, 2f * s);
-			}
+			var at = Math.Clamp((elapsed + castLeft - slide) / total, 0f, 1f);
+			var from = start + MathF.Tau * at;
+			var inner = r - thick * 0.5f - 2f * s;
+			draw.PathArcTo(center, inner, from, start + MathF.Tau, 24);
+			draw.PathStroke(ColSlideOk, ImDrawFlags.None, 2f * s);
+			var dir = new Vector2(MathF.Cos(from), MathF.Sin(from));
+			draw.AddLine(center + dir * (inner - 4f * s), center + dir * (r + thick * 0.5f), ColSlide, 2f * s);
 		}
 
 		// Center: the GCD being cast (player or RSR), else RSR's next GCD.
