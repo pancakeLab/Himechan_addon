@@ -136,8 +136,21 @@ public sealed partial class WHM_Himechan
 		public bool IsRequest; // Himechan command (e.g. /히메짱물장): chat feedback on failure
 	}
 
+	// 2026-10-14 user request: after an instant GCD (Dia, lilies, Glare IV, Swiftcast Glare) the gap is wide enough for two
+	// abilities. A second ability in such a gap is allowed only for player-driven inputs (queue replays, /rsr DoActions);
+	// automation stays at one per gap.
+	[RotationConfig(CombatType.PvE, Name = "넓은 틈(즉시 시전 GCD 뒤)에서는 대기 중인 수동 입력·명령을 2개까지 사용", Parent = nameof(SingleWeaveQueue), ParentValue = true)]
+	public bool DoubleWeaveInWideGap { get; set; } = true;
+
+	[Range(1.0f, 2.5f, ConfigUnitType.Seconds, 0.1f)]
+	[RotationConfig(CombatType.PvE, Name = "넓은 틈 기준: 첫 능력 사용 시점의 남은 GCD가 이 값 이상 (초)", Parent = nameof(DoubleWeaveInWideGap), ParentValue = true,
+		Tooltip = "글레어 시전 뒤 틈은 약 0.9초라 해당 없고, 디아·백합·글레어 IV·신속마 글레어 뒤 틈(약 1.8초 이상)만 해당됩니다. 두 번째 능력도 수동 기준(남은 GCD > 미루는 기준)을 지킵니다.")]
+	public float WideGapMinimum { get; set; } = 1.5f;
+
 	private readonly List<QueuedAbility> _weaveQueue = [];
-	private double _weaveSlotEnd; // the current GCD gap already holds one ability until this time
+	private double _weaveSlotEnd; // the current GCD gap holds at least one ability until this time
+	private int _weaveGapCount;   // abilities used in the current gap
+	private bool _weaveGapWide;   // the gap had room for two when its first ability went out
 	private bool _weaveReplaying;
 	private double _weaveHoldLogAfter;
 
@@ -145,8 +158,11 @@ public sealed partial class WHM_Himechan
 	internal int WeaveQueueCount => _weaveQueue.Count;
 	internal string WeaveQueueText => _weaveQueue.Count == 0 ? "비어 있음" : string.Join(" → ", _weaveQueue.ConvertAll(q => q.Label));
 
-	/// <summary>True until the GCD that is currently rolling has been used up; a second ability must wait for the next gap.</summary>
+	/// <summary>True while no ability has gone out in the GCD gap that is currently rolling.</summary>
 	internal bool WeaveSlotFree => Now >= _weaveSlotEnd;
+
+	/// <summary>One ability already went out in this gap, but the gap is wide (instant GCD) and still has a second place for a player-driven ability.</summary>
+	internal bool WeaveSecondSlotFree => !WeaveSlotFree && DoubleWeaveInWideGap && _weaveGapWide && _weaveGapCount < 2;
 
 	/// <summary>Any ability went out (RSR, a replay, a pass-through press): the current gap is taken until the GCD comes.</summary>
 	internal void MarkWeaveUsed(string source, uint id)
@@ -157,8 +173,15 @@ public sealed partial class WHM_Himechan
 			return; // GCD idle (downtime): nothing to protect.
 		}
 
+		if (WeaveSlotFree)
+		{
+			_weaveGapCount = 0;
+			_weaveGapWide = remain >= Math.Clamp(WideGapMinimum, 1.0f, 2.5f);
+		}
+
+		_weaveGapCount++;
 		_weaveSlotEnd = Now + remain;
-		RecordHimechanDiagnostic($"WEAVE SLOT src={source} id={id} gap={remain:F2}s");
+		RecordHimechanDiagnostic($"WEAVE SLOT src={source} id={id} gap={remain:F2}s n={_weaveGapCount} wide={_weaveGapWide}");
 	}
 
 	/// <summary>After DoAction used one of RSR's abilities (any path: rotation picks, opener, raise, RSR command queue).</summary>
@@ -210,7 +233,7 @@ public sealed partial class WHM_Himechan
 
 			var remain = DataCenter.DefaultGCDRemain;
 			var reason = _weaveQueue.Count > 0 ? "queue"
-				: !WeaveSlotFree ? "slot"
+				: !WeaveSlotFree ? (WeaveSecondSlotFree ? "slot-wide" : "slot")
 				: Player?.IsCasting == true ? "casting"
 				: DataCenter.AnimationLock > 0f ? "lock"
 				: remain > 0f && remain <= WHMHimechanPolicy.ManualTail(ManualWeaveTail) ? "tail"
@@ -305,7 +328,8 @@ public sealed partial class WHM_Himechan
 
 		var player = Player;
 		var manager = ActionManager.Instance();
-		if (player == null || manager == null || player.IsCasting || DataCenter.AnimationLock > 0f || manager->ActionQueued || !WeaveSlotFree)
+		if (player == null || manager == null || player.IsCasting || DataCenter.AnimationLock > 0f || manager->ActionQueued
+			|| !(WeaveSlotFree || WeaveSecondSlotFree))
 		{
 			return false;
 		}

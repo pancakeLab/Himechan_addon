@@ -97,12 +97,13 @@ public sealed partial class WHM_Himechan
 		// into a gap that already holds one; an RSR command ability also obeys the weave budget instead of RSR's 0.5s rule.
 		if (WeaveQueueActive && action is IBaseAction ability && ability.Info.IsAbility)
 		{
-			if (!WeaveSlotFree)
+			var isCommand = ReferenceEquals(DataCenter.CommandNextAction, action) && !ReferenceEquals(action, _gatedPick);
+			if (!WeaveSlotFree && !(isCommand && WeaveSecondSlotFree))
 			{
-				return false;
+				return false; // Automation: one per gap. A player command may take the second place of a wide gap.
 			}
 
-			if (ReferenceEquals(DataCenter.CommandNextAction, action) && !ReferenceEquals(action, _gatedPick))
+			if (isCommand)
 			{
 				// /rsr DoActions: a player request, so it follows the player's tail threshold (not the automatic budget)
 				// and the queue priority order (#32).

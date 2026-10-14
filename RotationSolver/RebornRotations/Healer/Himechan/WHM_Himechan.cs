@@ -557,7 +557,7 @@ public sealed partial class WHM_Himechan : WhiteMageRotation
 		base.DisplayBaseStatus();
 		ImGui.Text($"히메짱 {HimechanMain.VersionText} | 오프너: {_openerStatus} | 실제 GCD: {GlareIiiPvE.Cooldown.RecastTimeOneChargeRaw:F2}s");
 		ImGui.Text($"수동 부활: {ManualRaiseStatus} | 테스트 모드: {(HimechanTanks.TestModeActive ? "동작" : "꺼짐")}");
-		ImGui.Text($"위빙 큐: {WeaveQueueText} | 이번 틈: {(WeaveSlotFree ? "비어 있음" : "사용됨")}");
+		ImGui.Text($"위빙 큐: {WeaveQueueText} | 이번 틈: {(WeaveSlotFree ? "비어 있음" : WeaveSecondSlotFree ? "1개 사용(넓은 틈, 1개 더 가능)" : "사용됨")}");
 		ImGui.Text($"백합 충전까지: {LilyTime + DataCenter.DefaultGCDRemain:F2}s | 재시도 {LilyRetryEnd:F1}..{LilyOvercapWindow:F1}s | 일반 GCD 회복: {GCDHeal}");
 		ImGui.Text($"BMR: {BMRActive} | 타임라인 TB: {DataCenter.BMRDebugTimelineTankbuster} | 종합 TB: {BMRTankbusterIn}");
 		ImGui.Text($"이동: {DataCenter.MovingRaw:F2}/{MovementSwiftcastThreshold:F1}s");
