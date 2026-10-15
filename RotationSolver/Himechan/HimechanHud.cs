@@ -120,6 +120,13 @@ internal sealed class HimechanHud : Window
 		var fontSize = ImGui.GetFontSize() * s;
 		var small = fontSize * 0.8f;
 
+		if (settings.HudCompact)
+		{
+			DrawCompact(draw, origin, s, whm, settings, font, small);
+			SavePositionIfMoved(settings);
+			return;
+		}
+
 		// Columns: [reserved GCDs] [ring] [queue]
 		var ringBox = (Ring + RingThickness) * 2f * s;
 		var height = ringBox + fontSize * 1.4f;
@@ -195,21 +202,13 @@ internal sealed class HimechanHud : Window
 		var elapsed = total > 0f ? Math.Clamp(total - remain, 0f, total) : 0f;
 		var frac = total > 0f ? elapsed / total : 0f;
 		const float start = -MathF.PI / 2f;
-		const float stopMargin = 0.15f; // stand still this long before a cast-time GCD fires
 
-		// Move-safe (user decision 2026-10-14): every moment where moving cannot delay a cast. Casting: from the slidecast
-		// point. Not casting: always, except the last moment before a cast-time GCD fires (then "stop").
+		// Move-safe (user decision 2026-10-14): every moment where moving cannot delay a cast; faded for a soft transition.
 		var player = Player.Object;
 		var casting = player != null && player.IsCasting && total > 0f;
 		var castLeft = casting ? player!.TotalCastTime - player.CurrentCastTime : 0f;
 		var slide = Math.Clamp(settings.HudSlidecastWindow, 0f, 2f);
-		var moveSafe = casting ? castLeft <= slide : !nextNeedsCast || remain > stopMargin;
-		var stopNow = !moveSafe && !casting;
-
-		// Smooth fade so the state change reads as a glow, not a flash.
-		var dt = Math.Clamp(ImGui.GetIO().DeltaTime, 0f, 0.1f);
-		_moveAlpha += ((moveSafe ? 1f : 0f) - _moveAlpha) * Math.Min(1f, dt * 14f);
-		var a = _moveAlpha;
+		UpdateMoveState(settings, nextNeedsCast, out var a, out var stopNow);
 
 		// Simple single halo (user decision 2026-10-15), still faded in and out.
 		if (a > 0.02f)
@@ -266,6 +265,101 @@ internal sealed class HimechanHud : Window
 	}
 
 	private float _moveAlpha;
+
+	/// <summary>Move-safe state shared by both layouts: casting -> from the slidecast point; otherwise always, except right before a cast-time GCD fires.</summary>
+	private void UpdateMoveState(HimechanSettings settings, bool nextNeedsCast, out float alpha, out bool stopNow)
+	{
+		const float stopMargin = 0.15f;
+		var total = DataCenter.DefaultGCDTotal;
+		var remain = DataCenter.DefaultGCDRemain;
+		var player = Player.Object;
+		var casting = player != null && player.IsCasting && total > 0f;
+		var castLeft = casting ? player!.TotalCastTime - player.CurrentCastTime : 0f;
+		var slide = Math.Clamp(settings.HudSlidecastWindow, 0f, 2f);
+		var moveSafe = casting ? castLeft <= slide : !nextNeedsCast || remain > stopMargin;
+		stopNow = !moveSafe && !casting;
+		var dt = Math.Clamp(ImGui.GetIO().DeltaTime, 0f, 0.1f);
+		_moveAlpha += ((moveSafe ? 1f : 0f) - _moveAlpha) * Math.Min(1f, dt * 14f);
+		alpha = _moveAlpha;
+	}
+
+	// Compact layout (user sketch 2026-10-16): no cast bar at all. Top row: the current/next GCD (big) and the second GCD
+	// (smaller); bottom row: the four oGCD slots. Move-safe / stop / gap places are shown by frame colours only.
+	private const float CompactBig = 44f;
+	private const float CompactSecond = 34f;
+
+	private void DrawCompact(ImDrawListPtr draw, Vector2 origin, float s, WHM_Himechan whm, HimechanSettings settings, ImFontPtr font, float small)
+	{
+		var big = CompactBig * s;
+		var second = CompactSecond * s;
+		var ab = AbilityIcon * s;
+		var gap = Gap * s;
+		var pad = 4f * s;
+		var topWidth = big + gap + second;
+		var bottomWidth = MaxQueue * ab + (MaxQueue - 1) * gap;
+		var total = new Vector2(MathF.Max(topWidth, bottomWidth) + pad * 2f, big + gap + ab + pad * 2f);
+		ImGui.Dummy(total);
+
+		if (!settings.HudLocked)
+		{
+			draw.AddRectFilled(origin, origin + total, ColPanel, 6f * s);
+			draw.AddRect(origin, origin + total, ColUnlocked, 6f * s, ImDrawFlags.None, 1.5f);
+		}
+
+		var centerGcd = whm.HudCenterGcd();
+		var reserved = whm.HudReservedGcds(centerGcd);
+		var nextNeedsCast = reserved.Count > 0 ? reserved[0].NeedsCast : centerGcd is { Badge: "다음", NeedsCast: true };
+		UpdateMoveState(settings, nextNeedsCast, out var a, out var stopNow);
+
+		// Big box: current / next GCD. Frame = move state.
+		var bigPos = origin + new Vector2(pad, pad);
+		var bigFrame = stopNow ? ColStop : Lerp(ColFrameNext, ColSlideOk, a);
+		if (centerGcd is { } cg)
+		{
+			DrawIcon(draw, bigPos, big, cg with { NeedsCast = false }, bigFrame, font, small);
+		}
+		else
+		{
+			draw.AddRect(bigPos, bigPos + new Vector2(big, big), bigFrame, 5f * s, ImDrawFlags.None, 2f * s);
+		}
+
+		// Second box: the GCD that follows (bottom-aligned with the big one).
+		var secondPos = bigPos + new Vector2(big + gap, big - second);
+		if (reserved.Count > 0)
+		{
+			DrawIcon(draw, secondPos, second, reserved[0], ColFrame, font, small);
+		}
+		else
+		{
+			draw.AddRect(secondPos, secondPos + new Vector2(second, second), ColDim, 4f * s);
+		}
+
+		// oGCD row: the first HudGapPlaces slots glow green.
+		var queue = whm.HudQueueEntries();
+		var places = whm.HudGapPlaces;
+		var y = bigPos.Y + big + gap;
+		var x = bigPos.X;
+		for (var i = 0; i < MaxQueue; i++)
+		{
+			var pos = new Vector2(x, y);
+			var max = pos + new Vector2(ab, ab);
+			var open = i < places;
+			if (open)
+			{
+				draw.AddRectFilled(pos - new Vector2(2f * s), max + new Vector2(2f * s), ColGapGlow, 5f * s);
+			}
+
+			if (i < queue.Count)
+			{
+				DrawIcon(draw, pos, ab, queue[i], open ? ColSlideOk : ColFrame, font, small);
+			}
+			else
+			{
+				draw.AddRect(pos, max, open ? ColSlideOk : ColDim, 4f * s, ImDrawFlags.None, open ? 1.5f : 1f);
+			}
+			x += ab + gap;
+		}
+	}
 
 	private static uint Fade(uint color, float alpha)
 	{

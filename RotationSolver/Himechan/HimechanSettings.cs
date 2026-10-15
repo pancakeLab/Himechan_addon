@@ -32,6 +32,9 @@ internal sealed class HimechanSettings
 	/// <summary>Show only in combat / countdown (the unlocked HUD is always shown so it can be placed).</summary>
 	public bool HudCombatOnly { get; set; } = true;
 
+	/// <summary>Compact layout: no cast ring, just the two GCD boxes over the four oGCD slots.</summary>
+	public bool HudCompact { get; set; } = false;
+
 	/// <summary>Slidecast window: moving is safe once this much of the cast is left (seconds).</summary>
 	public float HudSlidecastWindow { get; set; } = 0.5f;
 

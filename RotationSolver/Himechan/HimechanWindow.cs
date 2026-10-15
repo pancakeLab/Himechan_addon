@@ -95,6 +95,13 @@ internal sealed class HimechanWindow : Window
 			? "잠겨 있습니다. 옮기려면 잠금을 풀고 HUD의 노란 테두리를 끌어 놓은 뒤 다시 잠그세요."
 			: "잠금이 풀려 있어 HUD가 항상 보이고 끌어서 옮길 수 있습니다. 위치는 자동 저장됩니다.");
 
+		var compact = settings.HudCompact;
+		if (ImGui.Checkbox("컴팩트 모드 (캐스팅 링 없이 GCD 2칸 + oGCD 4칸만)", ref compact))
+		{
+			settings.HudCompact = compact;
+			HimechanSettings.Save();
+		}
+
 		var combatOnly = settings.HudCombatOnly;
 		if (ImGui.Checkbox("전투·카운트다운 중에만 표시 (잠금 상태에서)", ref combatOnly))
 		{
