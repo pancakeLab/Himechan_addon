@@ -114,9 +114,18 @@ public sealed partial class WHM_Himechan
 		}
 
 		return WHMHimechanPolicy.CanWeave(DataCenter.DefaultGCDRemain,
-			DataCenter.AnimationLock, player.IsCasting, manager->ActionQueued,
-			ActionManagerEx.Instance.GetAnimationLockDelayEstimate());
+			DataCenter.AnimationLock, player.IsCasting, manager->ActionQueued, AutoWeaveBudgetNow);
 	}
+
+	// Game logs 2026-10-16: after a Glare cast the GCD has ~0.96s left, so with the old 0.85s floor automation had a
+	// ~0.1s window and Divine Benison usually slid to the next instant-GCD gap. Uses at 0.84s never pushed the GCD.
+	[Range(0.6f, 1.2f, ConfigUnitType.Seconds, 0.05f)]
+	[RotationConfig(CombatType.PvE, Name = "자동 능력 위빙 예산: 남은 GCD가 이 값보다 클 때만 자동 능력 사용 (초)",
+		Tooltip = "선모션 약 0.6초 + 서버 지연. 측정된 지연이 크면 그만큼 자동으로 올라갑니다. 글레어 시전 뒤 틈이 약 0.96초이므로 0.85 이상이면 그 틈에 자동 능력이 거의 못 들어갑니다.")]
+	public float AutoWeaveBudget { get; set; } = 0.75f;
+
+	/// <summary>The configured budget, raised when the observed animation-lock delay says 0.6s + delay is longer.</summary>
+	internal float AutoWeaveBudgetNow => WHMHimechanPolicy.AutoBudget(AutoWeaveBudget, ActionManagerEx.Instance.GetAnimationLockDelayEstimate());
 
 	/// <summary>Execution-time recheck (DoAction) of an ability this rotation picked; explicit commands, opener and raise keep their own rules.</summary>
 	internal bool ValidateMaintenanceAction(IAction? action)
@@ -194,9 +203,7 @@ public sealed partial class WHM_Himechan
 
 		_weaveLogAfter = now + 1.0;
 		RecordHimechanDiagnostic(string.Format("WEAVE DEFER gcd={0:F3} budget={1:F3} next={2}",
-			DataCenter.DefaultGCDRemain,
-			WHMHimechanPolicy.WeaveBudget(ActionManagerEx.Instance.GetAnimationLockDelayEstimate()),
-			nextGCD?.AdjustedID ?? 0));
+			DataCenter.DefaultGCDRemain, AutoWeaveBudgetNow, nextGCD?.AdjustedID ?? 0));
 	}
 
 	/// <summary>Spec #10. The random lead is drawn once per charge cycle; preview never advances the plan.</summary>

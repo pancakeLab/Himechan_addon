@@ -26,10 +26,18 @@ internal static class WHMHimechanPolicy
 			: 0.85f;
 
 	/// <summary>A GCD is planned: only weave when the remaining GCD is finite and strictly above the budget (0 is not a window).</summary>
-	internal static bool CanWeave(float gcdRemain, float animationLock, bool casting, bool queued, float observedDelay) =>
+	internal static bool CanWeave(float gcdRemain, float animationLock, bool casting, bool queued, float budget) =>
 		!casting && !queued && float.IsFinite(gcdRemain)
 		&& float.IsFinite(animationLock) && animationLock <= 0f
-		&& gcdRemain > WeaveBudget(observedDelay);
+		&& gcdRemain > budget;
+
+	/// <summary>Configured automatic budget (0.6-1.2s, default 0.75), never below 0.6s + the observed animation-lock delay.</summary>
+	internal static float AutoBudget(float configured, float observedDelay)
+	{
+		var floor = float.IsFinite(observedDelay) && observedDelay >= 0f ? 0.6f + observedDelay : 0.75f;
+		var value = float.IsFinite(configured) ? Math.Clamp(configured, 0.6f, 1.2f) : 0.75f;
+		return Math.Max(value, floor);
+	}
 
 	/// <summary>No GCD is planned (e.g. downtime): nothing can be clipped, so only casting / lock / game queue block an ability.</summary>
 	internal static bool CanUseWithoutGcd(float animationLock, bool casting, bool queued) =>

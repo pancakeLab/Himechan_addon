@@ -16,7 +16,7 @@ public sealed partial class WHM_Himechan
 
 	[Range(0.5f, 1.2f, ConfigUnitType.Seconds, 0.05f)]
 	[RotationConfig(CombatType.PvE, Name = "수동 능력 입력을 다음 틈으로 미루는 기준: 남은 GCD가 이 값 이하이면 미룸 (초)", Parent = nameof(SingleWeaveQueue), ParentValue = true,
-		Tooltip = "능력의 선모션(애니메이션 잠금 약 0.6초)에 서버 지연을 더한 값입니다. 자동 능력은 더 보수적인 공통 위빙 예산(0.85초 이상)을 그대로 씁니다.")]
+		Tooltip = "능력의 선모션(애니메이션 잠금 약 0.6초)에 서버 지연을 더한 값입니다. 자동 능력은 별도의 \"자동 능력 위빙 예산\" 설정을 씁니다.")]
 	public float ManualWeaveTail { get; set; } = 0.75f;
 
 	[RotationConfig(CombatType.PvE, Name = "거룩한 축복은 위빙 큐를 거치지 않고 즉시 사용 (끄면 다른 능력처럼 틈에 맞춰 사용)", Parent = nameof(SingleWeaveQueue), ParentValue = true)]
@@ -472,7 +472,9 @@ public sealed partial class WHM_Himechan
 		// Room in this gap (player threshold), or the GCD is idle and RSR has nothing to cast (downtime): otherwise let the GCD go first.
 		var remain = DataCenter.DefaultGCDRemain;
 		var fits = ManualWeaveFits(remain);
-		var idle = remain <= DataCenter.CalculatedActionAhead && (!InCombat || ActionUpdater.NextGCDAction == null);
+		// Idle means the GCD really is ready. RSR's "ahead" setting made this true up to ~0.5s early (logs 2026-10-16:
+		// Assize / Plenary replayed at 0.34-0.46s left and pushed the next Glare by 0.25-0.5s).
+		var idle = remain <= 0f && (!InCombat || ActionUpdater.NextGCDAction == null);
 		if (!fits && !idle)
 		{
 			if (now >= _weaveHoldLogAfter && remain > 0f)
