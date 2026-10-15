@@ -71,10 +71,6 @@ public sealed partial class WHM_Himechan
 			list.Add(new HudEntry(command.AdjustedID, false, 0, command.Name, "명령", false, NeedsCastFor(command.AdjustedID)));
 		}
 
-		// Stored GCD presses (#36) fire after everything Himechan planned, in press order. They are separate presses, so a
-		// stored Glare is shown even while Glare is being cast (game test 2026-10-14: it was hidden until the cast ended).
-		list.AddRange(HudGcdQueueEntries());
-
 		return list;
 	}
 
