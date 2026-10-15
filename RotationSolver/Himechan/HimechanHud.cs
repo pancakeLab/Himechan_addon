@@ -214,7 +214,7 @@ internal sealed class HimechanHud : Window
 		// Simple single halo (user decision 2026-10-15), still faded in and out.
 		if (a > 0.02f)
 		{
-			draw.AddCircle(center, r, Fade(ColSlideOk, 0.28f * a), 48, thick * 2.6f);
+			draw.AddCircle(center, r, Fade(ColSlideOk, 0.28f * a), 48, thick * 1.05f); // 40% of the earlier 2.6x halo (user decision 2026-10-15)
 		}
 
 		draw.AddCircle(center, r, Lerp(ColRingBase, ColRingSafe, a), 48, thick);
