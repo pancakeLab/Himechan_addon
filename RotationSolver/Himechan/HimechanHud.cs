@@ -269,7 +269,7 @@ internal sealed class HimechanHud : Window
 	/// <summary>Move-safe state shared by both layouts: casting -> from the slidecast point; otherwise always, except right before a cast-time GCD fires.</summary>
 	private void UpdateMoveState(HimechanSettings settings, bool nextNeedsCast, out float alpha, out bool stopNow)
 	{
-		const float stopMargin = 0.15f;
+		var stopMargin = Math.Clamp(settings.CastAssistStopMargin, 0.05f, 0.5f); // shared with the #37 pre-cast stop
 		var total = DataCenter.DefaultGCDTotal;
 		var remain = DataCenter.DefaultGCDRemain;
 		var player = Player.Object;

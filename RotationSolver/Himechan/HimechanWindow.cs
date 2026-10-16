@@ -151,7 +151,19 @@ internal sealed class HimechanWindow : Window
 			settings.CastAssistMode = mode;
 			HimechanSettings.Save();
 		}
-		ImGui.TextWrapped("켜진 동안 시전 중 이동 입력은 슬라이딩 캐스팅 시점(위 \"이동·선입력 가능 시작\" 값)까지 보류됐다가 그 순간 출발합니다. 시전이 아닌 구간은 제한이 없습니다. 급히 끊고 움직이려면 RSR 설정의 \"이동 잠금을 잠시 푸는 보조 키\"(기본 Ctrl) 또는 게임패드 R1을 누른 채 이동하세요. 히메짱 프로필의 RSR \"시전 중 이동 잠금\"은 이 기능이 켜고 끕니다.");
+		ImGui.TextWrapped("켜진 동안 시전 중 이동 입력은 슬라이딩 캐스팅 시점(위 \"이동·선입력 가능 시작\" 값)까지 보류됐다가 그 순간 출발하고, 다음 GCD가 시전형이면 GCD 준비 직전(아래 여유)에 다시 멈춰 시전이 끊기지 않게 이어집니다. 그 사이 틈에서는 자유롭게 움직입니다. 급히 끊고 움직이려면 RSR 설정의 \"이동 잠금을 잠시 푸는 보조 키\"(기본 Ctrl) 또는 게임패드 R1을 누른 채 이동하세요. 히메짱 프로필의 RSR \"시전 중 이동 잠금\"은 이 기능이 켜고 끕니다.");
+
+		var stopMargin = settings.CastAssistStopMargin;
+		ImGui.SetNextItemWidth(200);
+		if (ImGui.SliderFloat("시전 전 정지 여유 (GCD 준비 전, 초)", ref stopMargin, 0.05f, 0.5f, "%.2f"))
+		{
+			settings.CastAssistStopMargin = stopMargin;
+		}
+		if (ImGui.IsItemDeactivatedAfterEdit())
+		{
+			HimechanSettings.Save();
+		}
+		ImGui.TextWrapped("HUD의 주황 \"정지\" 표시도 같은 값을 씁니다. 시전이 시작되자마자 끊기면(로그 CAST ASSIST INTERRUPTED) 값을 올리세요.");
 
 		if (mode == HimechanCastAssist.ModeToggle)
 		{

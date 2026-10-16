@@ -11,7 +11,9 @@ namespace RotationSolver.Himechan;
 /// back until the slidecast window opens (HUD "이동·선입력 가능 시작"), then released at once: a movement key or the
 /// mouse "walk" gesture held early starts the character exactly at the slide point, and the cast never breaks.
 /// Armed = mode Toggle with the toggle on, or mode MouseHold while both mouse buttons are down (the game's walk-forward
-/// gesture; keyboard movement stays vanilla and breaks the cast as usual). Outside a cast nothing is blocked.
+/// gesture; keyboard movement stays vanilla and breaks the cast as usual). Between casts only the last CastAssistStopMargin
+/// seconds before a planned cast GCD are blocked (a cast started while moving is interrupted at once), so with the walk
+/// gesture held the loop is cast → slide → run through the gap → stop → cast.
 /// Emergency release is RSR's own (Service.CanMove honours DataCenter.NoPoslock): the unlock modifier key or gamepad R1.
 /// Owns Service.CanMove while active; RSR's MovingUpdater steps aside (HIMECHAN-HOOK: Move). Requires RSR's
 /// PoslockCasting in the Himechan profile (switched on here, switched back off when the assist is turned off).
@@ -87,25 +89,100 @@ internal static class HimechanCastAssist
 			_ => false,
 		};
 
-		var lockNow = false;
-		var left = 0f;
+		var slide = Math.Clamp(settings.HudSlidecastWindow, 0.2f, 1.0f);
+		var stopMargin = Math.Clamp(settings.CastAssistStopMargin, 0.05f, 0.5f);
 		var player = Player.Object;
-		if (Armed && player != null && player.IsCasting && player.TotalCastTime > 0f
-			&& Array.IndexOf(ActionBasicInfo.ActionsNoNeedCasting, player.CastActionId) < 0)
+		var casting = player != null && player.IsCasting && player.TotalCastTime > 0f;
+		var left = casting ? player!.TotalCastTime - player.CurrentCastTime : 0f;
+
+		// Game log 2026-10-16 (7.5.7.210): a cast that starts while the character is already moving is interrupted within
+		// ~60 ms, so locking only once the cast is running is too late. Diagnostic for that case.
+		if (_wasCasting && !casting && _lastCastLeft > slide + 0.15f)
 		{
-			left = player.TotalCastTime - player.CurrentCastTime;
-			lockNow = left > Math.Clamp(settings.HudSlidecastWindow, 0.2f, 1.0f);
+			HimechanLog.Write("MOVE", string.Format("CAST ASSIST INTERRUPTED left={0:F2}", _lastCastLeft));
+		}
+		_wasCasting = casting;
+		_lastCastLeft = left;
+
+		var phase = PhaseNone;
+		uint planned = 0;
+		if (Armed && player != null)
+		{
+			if (casting)
+			{
+				if (Array.IndexOf(ActionBasicInfo.ActionsNoNeedCasting, player.CastActionId) < 0 && left > slide)
+				{
+					phase = PhaseCast;
+				}
+			}
+			else
+			{
+				// Pre-cast stop: the next GCD needs a cast and the GCD is about to be ready, so stand still before it fires.
+				// Held for at most PreStopLimit once the GCD is ready, in case the planned cast never comes (no target etc.).
+				planned = PlannedCastId();
+				var remain = DataCenter.DefaultGCDRemain;
+				if (planned != 0 && remain <= stopMargin)
+				{
+					if (_preStopSince == 0)
+					{
+						_preStopSince = Environment.TickCount64;
+					}
+
+					if (Environment.TickCount64 - _preStopSince <= PreStopLimitMs)
+					{
+						phase = PhasePreCast;
+					}
+				}
+				else
+				{
+					_preStopSince = 0;
+				}
+			}
 		}
 
+		if (casting || !Armed)
+		{
+			_preStopSince = 0;
+		}
+
+		var lockNow = phase != PhaseNone;
 		// RSR's setter already ORs in NoPoslock (unlock key / gamepad R1 / occupied), so the emergency release costs nothing here.
 		Service.CanMove = !lockNow;
 		_owned = true;
-		if (lockNow != _lockingNow)
+		if (phase != _phase)
 		{
+			_phase = phase;
 			_lockingNow = lockNow;
-			HimechanLog.Write("MOVE", lockNow
-				? string.Format("CAST ASSIST LOCK id={0} left={1:F2}", player?.CastActionId ?? 0, left)
-				: string.Format("CAST ASSIST RELEASE left={0:F2}", left));
+			HimechanLog.Write("MOVE", phase switch
+			{
+				PhaseCast => string.Format("CAST ASSIST LOCK id={0} left={1:F2}", player?.CastActionId ?? 0, left),
+				PhasePreCast => string.Format("CAST ASSIST STOP next={0} gcd={1:F2}", planned, DataCenter.DefaultGCDRemain),
+				_ => string.Format("CAST ASSIST RELEASE left={0:F2}", left),
+			});
+		}
+	}
+
+	private const int PhaseNone = 0;
+	private const int PhasePreCast = 1;
+	private const int PhaseCast = 2;
+	private const long PreStopLimitMs = 1000;
+
+	private static int _phase;
+	private static long _preStopSince;
+	private static bool _wasCasting;
+	private static float _lastCastLeft;
+
+	/// <summary>Adjusted id of the next GCD when it needs a cast (HUD determination: game queue → RSR next → request → command).</summary>
+	private static uint PlannedCastId()
+	{
+		try
+		{
+			return DataCenter.CurrentRotation is RebornRotations.Healer.WHM_Himechan whm ? whm.NextGcdCastId() : 0;
+		}
+		catch (Exception ex)
+		{
+			PluginLog.Debug($"[Himechan] Cast assist plan check failed: {ex.Message}");
+			return 0;
 		}
 	}
 
@@ -114,6 +191,8 @@ internal static class HimechanCastAssist
 	{
 		Armed = false;
 		_wasInCombat = false;
+		_preStopSince = 0;
+		_phase = PhaseNone;
 		if (_owned)
 		{
 			_owned = false;

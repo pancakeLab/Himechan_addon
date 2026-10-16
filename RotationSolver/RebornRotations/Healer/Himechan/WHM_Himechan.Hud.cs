@@ -132,6 +132,24 @@ public sealed partial class WHM_Himechan
 	}
 
 	/// <summary>A GCD with a cast time while Swiftcast is not up: moving when it fires would cancel it.</summary>
+	/// <summary>
+	/// #37 cast assist: the GCD that fires next (game queue, RSR's next GCD, request, command) when it needs a cast,
+	/// using the same determination as the HUD "정지" warning. 0 = nothing planned, instant, or already casting.
+	/// </summary>
+	internal uint NextGcdCastId()
+	{
+		var player = Player;
+		if (player != null && player.IsCasting)
+		{
+			return 0;
+		}
+
+		var center = HudCenterGcd();
+		var reserved = HudReservedGcds(center);
+		var next = reserved.Count > 0 ? reserved[0] : center is { Badge: "다음" } ? center : null;
+		return next is { NeedsCast: true } ? next.ActionId : 0;
+	}
+
 	private static bool NeedsCastFor(uint adjustedId)
 	{
 		var row = Service.GetSheet<LuminaAction>().GetRowOrDefault(adjustedId);

@@ -48,6 +48,9 @@ internal sealed class HimechanSettings
 	/// <summary>#37 cast assist: 0 off, 1 armed while both mouse buttons are down, 2 toggle (/히메짱슬캐). Slide window = HudSlidecastWindow.</summary>
 	public int CastAssistMode { get; set; } = HimechanCastAssist.ModeOff;
 
+	/// <summary>Pre-cast stop: stand still this many seconds before a planned cast GCD is ready (also the HUD "정지" margin).</summary>
+	public float CastAssistStopMargin { get; set; } = 0.2f;
+
 	/// <summary>Toggle mode: switch the toggle off when combat ends.</summary>
 	public bool CastAssistAutoOff { get; set; } = true;
 
