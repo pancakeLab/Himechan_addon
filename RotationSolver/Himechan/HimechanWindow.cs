@@ -155,7 +155,7 @@ internal sealed class HimechanWindow : Window
 
 		var stopMargin = settings.CastAssistStopMargin;
 		ImGui.SetNextItemWidth(200);
-		if (ImGui.SliderFloat("시전 전 정지 여유 (GCD 준비 전, 초)", ref stopMargin, 0.05f, 0.5f, "%.2f"))
+		if (ImGui.SliderFloat("시전 전 정지 여유 (GCD 준비 전, 초)", ref stopMargin, 0f, 0.5f, "%.2f"))
 		{
 			settings.CastAssistStopMargin = stopMargin;
 		}
@@ -163,7 +163,7 @@ internal sealed class HimechanWindow : Window
 		{
 			HimechanSettings.Save();
 		}
-		ImGui.TextWrapped("HUD의 주황 \"정지\" 표시도 같은 값을 씁니다. 시전이 시작되자마자 끊기면(로그 CAST ASSIST INTERRUPTED) 값을 올리세요. 다음 GCD 계획이 없을 때(수동 모드)도 시전이 온다고 보고 멈춥니다. RSR이 디아·백합 같은 즉시 시전을 계획했을 때만 멈추지 않습니다.");
+		ImGui.TextWrapped("HUD의 주황 \"정지\" 표시도 같은 값을 씁니다. 시전이 시작되자마자 끊기면(로그 CAST ASSIST MEASURE INTERRUPTED) 값을 올리세요. 다음 GCD 계획이 없을 때(수동 모드)도 시전이 온다고 보고 멈춥니다. RSR이 디아·백합 같은 즉시 시전을 계획했을 때만 멈추지 않습니다. 디버그 모드에서는 시전마다 측정 로그(MEASURE START/FX/OK)가 남습니다. 0.2 → 0.1 → 0.05 → 0 순으로 내리며 20~30 GCD씩 시험해 보세요.");
 
 		var alwaysStop = settings.CastAssistAlwaysStop;
 		if (ImGui.Checkbox("항상 정지 (다음 GCD가 즉시 시전이어도 준비 직전에 멈춤)", ref alwaysStop))

@@ -330,6 +330,7 @@ internal static class HimechanHooks
 			var id = set.Action.Value.RowId;
 			whm.ManualRaiseEffect(id, set.Target?.GameObjectId ?? 0);
 			whm.AttackEffect(id, set.Target);
+			HimechanCastAssist.OnEffect(id);
 
 			// The native effect-header action kind is one byte; ECommons' field reads four (flags/target count included).
 			var isAction = unchecked((byte)set.Header.ActionType) == 1;
