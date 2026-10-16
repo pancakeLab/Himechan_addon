@@ -147,7 +147,7 @@ public sealed partial class WHM_Himechan
 		var center = HudCenterGcd();
 		var reserved = HudReservedGcds(center);
 		var next = reserved.Count > 0 ? reserved[0] : center is { Badge: "다음" } ? center : null;
-		return next is { NeedsCast: true } ? next.ActionId : 0;
+		return next is { NeedsCast: true } entry ? entry.ActionId : 0;
 	}
 
 	private static bool NeedsCastFor(uint adjustedId)
