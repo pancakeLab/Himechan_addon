@@ -38,6 +38,28 @@ internal static class HimechanHooks
 		ActionEffect.ActionEffectEvent -= OnActionEffect;
 		HimechanBasicHooks.OverrideQueuedGCD = null;
 		HimechanBasicHooks.AllowOffTargetInManual = false;
+		try
+		{
+			HimechanCastAssist.Release();
+		}
+		catch (Exception ex)
+		{
+			PluginLog.Error($"[Himechan] Cast assist release failed: {ex.Message}");
+		}
+	}
+
+	/// <summary>HIMECHAN-HOOK MovingUpdater.UpdateCanMove: true = the cast assist (#37) owns Service.CanMove, RSR's lock logic is skipped.</summary>
+	public static bool OverridesMovement()
+	{
+		try
+		{
+			return HimechanCastAssist.Active;
+		}
+		catch (Exception ex)
+		{
+			PluginLog.Error($"[Himechan] OverridesMovement failed: {ex.Message}");
+			return false;
+		}
 	}
 
 	/// <summary>Framework update (every frame).</summary>
@@ -47,6 +69,7 @@ internal static class HimechanHooks
 		{
 			HimechanTanks.Update();
 			HimechanLog.Update();
+			HimechanCastAssist.Update();
 
 			var rotation = DataCenter.CurrentRotation;
 			if (!ReferenceEquals(rotation, _lastRotation))

@@ -140,6 +140,65 @@ internal sealed class HimechanWindow : Window
 		ImGui.TextWrapped("링: 파랑 = 지난 GCD, 빨강 = 위빙 불가 구간, 안쪽 초록 호 = 이동·다음 GCD 선입력이 가능한 구간(시작점에 노란 눈금, 구간에 들어가면 링 전체가 초록). 왼쪽 = 예약 GCD(다음·요청·명령·선입력), 오른쪽 = 대기 oGCD(우선순위 순, 초록 칸 수 = 이번 틈에 더 들어갈 수, 흐린 칸 = 다음 자동 후보). 주황 테두리 + \"정지\" = 시전이 필요한 GCD.");
 
 		ImGui.Separator();
+		ImGui.TextUnformatted("슬라이딩 캐스팅 보조 (CAST ASSIST)");
+
+		var mode = settings.CastAssistMode;
+		var modeChanged = ImGui.RadioButton("끔 (바닐라)", ref mode, HimechanCastAssist.ModeOff);
+		modeChanged |= ImGui.RadioButton("마우스 좌+우 버튼으로 이동할 때만 (키보드 이동은 평소대로 시전을 끊음)", ref mode, HimechanCastAssist.ModeMouseHold);
+		modeChanged |= ImGui.RadioButton("토글 (/히메짱슬캐 로 켜고 끔)", ref mode, HimechanCastAssist.ModeToggle);
+		if (modeChanged)
+		{
+			settings.CastAssistMode = mode;
+			HimechanSettings.Save();
+		}
+		ImGui.TextWrapped("켜진 동안 시전 중 이동 입력은 슬라이딩 캐스팅 시점(위 \"이동·선입력 가능 시작\" 값)까지 보류됐다가 그 순간 출발합니다. 시전이 아닌 구간은 제한이 없습니다. 급히 끊고 움직이려면 RSR 설정의 \"이동 잠금을 잠시 푸는 보조 키\"(기본 Ctrl) 또는 게임패드 R1을 누른 채 이동하세요. 히메짱 프로필의 RSR \"시전 중 이동 잠금\"은 이 기능이 켜고 끕니다.");
+
+		if (mode == HimechanCastAssist.ModeToggle)
+		{
+			var autoOff = settings.CastAssistAutoOff;
+			if (ImGui.Checkbox("전투가 끝나면 토글을 자동으로 끔", ref autoOff))
+			{
+				settings.CastAssistAutoOff = autoOff;
+				HimechanSettings.Save();
+			}
+
+			if (ImGui.Button(settings.CastAssistToggleOn ? "토글 끄기" : "토글 켜기"))
+			{
+				settings.CastAssistToggleOn = !settings.CastAssistToggleOn;
+			}
+			ImGui.SameLine();
+		}
+		ImGui.TextUnformatted($"상태: {HimechanCastAssist.StatusText}");
+
+		var textLocked = settings.CastAssistTextLocked;
+		if (ImGui.Checkbox("CAST ASSIST 글자 잠금 (잠그면 클릭이 통과하고 움직이지 않음)", ref textLocked))
+		{
+			settings.CastAssistTextLocked = textLocked;
+			HimechanSettings.Save();
+		}
+		ImGui.TextWrapped(textLocked
+			? "잠겨 있어 보조가 동작 중일 때만 노란 글자가 보입니다. 옮기려면 잠금을 풀고 끌어 놓은 뒤 다시 잠그세요."
+			: "잠금이 풀려 있어 글자가 항상 보이고 끌어서 옮길 수 있습니다. 위치는 자동 저장됩니다.");
+
+		var textScale = settings.CastAssistTextScale;
+		ImGui.SetNextItemWidth(200);
+		if (ImGui.SliderFloat("글자 크기 배율", ref textScale, 0.5f, 3f, "%.2f"))
+		{
+			settings.CastAssistTextScale = textScale;
+		}
+		if (ImGui.IsItemDeactivatedAfterEdit())
+		{
+			HimechanSettings.Save();
+		}
+
+		if (ImGui.Button("글자 위치 초기화 (화면 위쪽 가운데)"))
+		{
+			settings.CastAssistPosX = -1f;
+			settings.CastAssistPosY = -1f;
+			HimechanSettings.Save();
+		}
+
+		ImGui.Separator();
 		ImGui.TextUnformatted("디버그 · 테스트");
 
 		var debug = settings.DebugMode;

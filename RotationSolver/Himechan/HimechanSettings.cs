@@ -45,6 +45,25 @@ internal sealed class HimechanSettings
 	public float HudPosX { get; set; } = -1f;
 	public float HudPosY { get; set; } = -1f;
 
+	/// <summary>#37 cast assist: 0 off, 1 armed while both mouse buttons are down, 2 toggle (/히메짱슬캐). Slide window = HudSlidecastWindow.</summary>
+	public int CastAssistMode { get; set; } = HimechanCastAssist.ModeOff;
+
+	/// <summary>Toggle mode: switch the toggle off when combat ends.</summary>
+	public bool CastAssistAutoOff { get; set; } = true;
+
+	/// <summary>"CAST ASSIST" text: locked = click-through, immovable, shown only while armed.</summary>
+	public bool CastAssistTextLocked { get; set; } = false;
+	public float CastAssistTextScale { get; set; } = 1.4f;
+	public float CastAssistPosX { get; set; } = -1f;
+	public float CastAssistPosY { get; set; } = -1f;
+
+	/// <summary>True while the assist switched RSR's PoslockCasting on in the Himechan profile (switched back off with the assist).</summary>
+	public bool CastAssistOwnsPoslock { get; set; } = false;
+
+	/// <summary>Toggle mode state. Never saved: always off after a restart.</summary>
+	[JsonIgnore]
+	public bool CastAssistToggleOn { get; set; } = false;
+
 	/// <summary>Spec 3.11 / #30: while solo, treat the player as the tank. Never saved, so it is always off after a restart.</summary>
 	[JsonIgnore]
 	public bool TestMode { get; set; } = false;

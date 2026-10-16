@@ -17,6 +17,7 @@ internal static class HimechanMain
 	public const string RaiseCommand = "/히메짱레이즈";
 	public const string SolaceCommand = "/히메짱백합";
 	public const string AquaveilCommand = "/히메짱물장";
+	public const string CastAssistCommand = "/히메짱슬캐";
 
 	private static WindowSystem? _windowSystem;
 	private static HimechanWindow? _window;
@@ -39,6 +40,7 @@ internal static class HimechanMain
 			_windowSystem = new WindowSystem("Himechan");
 			_windowSystem.AddWindow(_window);
 			_windowSystem.AddWindow(new HimechanHud());
+			_windowSystem.AddWindow(new HimechanCastAssistWindow());
 			Svc.PluginInterface.UiBuilder.Draw += _windowSystem.Draw;
 
 			_ = Svc.Commands.AddHandler(SettingsCommand, new CommandInfo(OnSettingsCommand)
@@ -64,6 +66,11 @@ internal static class HimechanMain
 			_ = Svc.Commands.AddHandler(AquaveilCommand, new CommandInfo(OnAquaveilCommand)
 			{
 				HelpMessage = "물의 장막을 한 번 요청합니다 (아군 대상 / 적·무대상이면 스탠스를 켠 탱커). 다음 안전한 위빙 틈에 사용합니다.",
+				ShowInHelp = true,
+			});
+			_ = Svc.Commands.AddHandler(CastAssistCommand, new CommandInfo(OnCastAssistCommand)
+			{
+				HelpMessage = "슬라이딩 캐스팅 보조(CAST ASSIST) 토글을 켜고 끕니다 (켬 / 끔 / 인자 없으면 전환). 방식이 '토글'일 때 적용됩니다.",
 				ShowInHelp = true,
 			});
 
@@ -92,6 +99,7 @@ internal static class HimechanMain
 			_ = Svc.Commands.RemoveHandler(RaiseCommand);
 			_ = Svc.Commands.RemoveHandler(SolaceCommand);
 			_ = Svc.Commands.RemoveHandler(AquaveilCommand);
+			_ = Svc.Commands.RemoveHandler(CastAssistCommand);
 			HimechanHooks.Dispose();
 			HimechanLog.Dispose();
 			if (_windowSystem != null)
@@ -159,6 +167,34 @@ internal static class HimechanMain
 	private static void OnStatusCommand(string command, string arguments)
 	{
 		PrintStatus();
+	}
+
+	private static void OnCastAssistCommand(string command, string arguments)
+	{
+		try
+		{
+			var settings = HimechanSettings.Current;
+			var on = arguments.Trim().ToLowerInvariant() switch
+			{
+				"켬" or "on" or "켜기" => true,
+				"끔" or "off" or "끄기" => false,
+				_ => !settings.CastAssistToggleOn,
+			};
+			settings.CastAssistToggleOn = on;
+			if (settings.CastAssistMode != HimechanCastAssist.ModeToggle)
+			{
+				Svc.Chat.Print($"[히메짱] CAST ASSIST 토글 {(on ? "켬" : "끔")} — 방식이 '토글'이 아니라 적용되지 않습니다. /히메짱 창에서 방식을 바꾸세요.");
+				return;
+			}
+
+			Svc.Chat.Print(on
+				? "[히메짱] CAST ASSIST 켬: 시전 중 이동이 슬라이딩 캐스팅 시점까지 보류됩니다. 급히 끊으려면 RSR 이동 잠금 보조 키(기본 Ctrl)나 패드 R1."
+				: "[히메짱] CAST ASSIST 끔");
+		}
+		catch (Exception ex)
+		{
+			PluginLog.Error($"[Himechan] Cast assist command failed: {ex.Message}");
+		}
 	}
 
 	internal static void PrintStatus()

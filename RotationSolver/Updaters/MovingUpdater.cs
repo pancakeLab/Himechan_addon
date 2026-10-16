@@ -10,6 +10,7 @@ internal static class MovingUpdater
 {
 	internal static unsafe void UpdateCanMove(bool doNextAction)
 	{
+		if (Himechan.HimechanHooks.OverridesMovement()) return; // HIMECHAN-HOOK: Move (#37 cast assist owns Service.CanMove)
 		if (Player.Object == null)
 		{
 			return;
