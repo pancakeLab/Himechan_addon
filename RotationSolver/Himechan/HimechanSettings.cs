@@ -51,6 +51,9 @@ internal sealed class HimechanSettings
 	/// <summary>Pre-cast stop: stand still this many seconds before a planned cast GCD is ready (also the HUD "정지" margin).</summary>
 	public float CastAssistStopMargin { get; set; } = 0.2f;
 
+	/// <summary>Option C: stop before every GCD, even when the planned next GCD is instant (default B: stop unless an instant is planned).</summary>
+	public bool CastAssistAlwaysStop { get; set; } = false;
+
 	/// <summary>Toggle mode: switch the toggle off when combat ends.</summary>
 	public bool CastAssistAutoOff { get; set; } = true;
 

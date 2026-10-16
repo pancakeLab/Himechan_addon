@@ -117,11 +117,15 @@ internal static class HimechanCastAssist
 			}
 			else
 			{
-				// Pre-cast stop: the next GCD needs a cast and the GCD is about to be ready, so stand still before it fires.
-				// Held for at most PreStopLimit once the GCD is ready, in case the planned cast never comes (no target etc.).
-				planned = PlannedCastId();
+				// Pre-cast stop: a cast is expected and the GCD is about to be ready, so stand still before it fires.
+				// Expected = planned cast, or nothing planned (B, user decision 2026-10-16: manual play needs no pre-queue),
+				// or always (option C). Held for at most PreStopLimit once the GCD is ready, in case no cast ever comes.
+				var plan = PlannedCast(out planned);
+				var expectCast = settings.CastAssistAlwaysStop
+					|| plan == RebornRotations.Healer.WHM_Himechan.NextGcdCast
+					|| plan == RebornRotations.Healer.WHM_Himechan.NextGcdNone;
 				var remain = DataCenter.DefaultGCDRemain;
-				if (planned != 0 && remain <= stopMargin)
+				if (expectCast && remain <= stopMargin)
 				{
 					if (_preStopSince == 0)
 					{
@@ -172,17 +176,20 @@ internal static class HimechanCastAssist
 	private static bool _wasCasting;
 	private static float _lastCastLeft;
 
-	/// <summary>Adjusted id of the next GCD when it needs a cast (HUD determination: game queue → RSR next → request → command).</summary>
-	private static uint PlannedCastId()
+	/// <summary>What the next GCD needs (HUD determination: game queue → RSR next → request → command); None when unknown.</summary>
+	private static int PlannedCast(out uint id)
 	{
+		id = 0;
 		try
 		{
-			return DataCenter.CurrentRotation is RebornRotations.Healer.WHM_Himechan whm ? whm.NextGcdCastId() : 0;
+			return DataCenter.CurrentRotation is RebornRotations.Healer.WHM_Himechan whm
+				? whm.NextGcdPlan(out id)
+				: RebornRotations.Healer.WHM_Himechan.NextGcdNone;
 		}
 		catch (Exception ex)
 		{
 			PluginLog.Debug($"[Himechan] Cast assist plan check failed: {ex.Message}");
-			return 0;
+			return RebornRotations.Healer.WHM_Himechan.NextGcdNone;
 		}
 	}
 

@@ -163,7 +163,15 @@ internal sealed class HimechanWindow : Window
 		{
 			HimechanSettings.Save();
 		}
-		ImGui.TextWrapped("HUD의 주황 \"정지\" 표시도 같은 값을 씁니다. 시전이 시작되자마자 끊기면(로그 CAST ASSIST INTERRUPTED) 값을 올리세요.");
+		ImGui.TextWrapped("HUD의 주황 \"정지\" 표시도 같은 값을 씁니다. 시전이 시작되자마자 끊기면(로그 CAST ASSIST INTERRUPTED) 값을 올리세요. 다음 GCD 계획이 없을 때(수동 모드)도 시전이 온다고 보고 멈춥니다. RSR이 디아·백합 같은 즉시 시전을 계획했을 때만 멈추지 않습니다.");
+
+		var alwaysStop = settings.CastAssistAlwaysStop;
+		if (ImGui.Checkbox("항상 정지 (다음 GCD가 즉시 시전이어도 준비 직전에 멈춤)", ref alwaysStop))
+		{
+			settings.CastAssistAlwaysStop = alwaysStop;
+			HimechanSettings.Save();
+		}
+		ImGui.TextWrapped("계획이 마지막 순간에 바뀌어 끊기는 일까지 막는 가장 확실한 방식. 대신 디아·백합 때도 약 0.2초 멈춥니다.");
 
 		if (mode == HimechanCastAssist.ModeToggle)
 		{
