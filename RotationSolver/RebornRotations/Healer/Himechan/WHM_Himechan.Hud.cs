@@ -125,7 +125,7 @@ public sealed partial class WHM_Himechan
 		return false;
 	}
 
-	private static bool IsGcdActionId(uint adjustedId)
+	internal static bool IsGcdActionId(uint adjustedId)
 	{
 		var row = Service.GetSheet<LuminaAction>().GetRowOrDefault(adjustedId);
 		return row is { } action && action.ActionCategory.RowId is (uint)ActionCate.Spell or (uint)ActionCate.Weaponskill;
@@ -161,7 +161,7 @@ public sealed partial class WHM_Himechan
 		return entry.NeedsCast ? NextGcdCast : NextGcdInstant;
 	}
 
-	private static bool NeedsCastFor(uint adjustedId)
+	internal static bool NeedsCastFor(uint adjustedId)
 	{
 		var row = Service.GetSheet<LuminaAction>().GetRowOrDefault(adjustedId);
 		return row is { } action && action.Cast100ms > 0 && !HasSwift;

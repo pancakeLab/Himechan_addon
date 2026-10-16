@@ -4,6 +4,7 @@ using ECommons.GameHelpers;
 using ECommons.Logging;
 using FFXIVClientStructs.FFXIV.Client.Game;
 using FFXIVClientStructs.FFXIV.Client.Game.Control;
+using System.Runtime.InteropServices;
 
 namespace RotationSolver.Himechan;
 
@@ -14,11 +15,12 @@ namespace RotationSolver.Himechan;
 /// Armed = mode Toggle with the toggle on, or mode MouseHold while both mouse buttons are down (the game's walk-forward
 /// gesture; keyboard movement stays vanilla and breaks the cast as usual). Between casts only the last CastAssistStopMargin
 /// seconds before a planned cast GCD are blocked (a cast started while moving is interrupted at once), so with the walk
-/// gesture held the loop is cast → slide → run through the gap → stop → cast.
+/// gesture held the loop is cast → slide → run through the gap → stop → cast. Idle movement is free (user decision
+/// 2026-10-16 evening): a cast GCD pressed while moving is held for a few frames, the character stops, then it is re-issued.
 /// Emergency release is RSR's own (Service.CanMove honours DataCenter.NoPoslock): the unlock modifier key or gamepad R1.
 /// Owns Service.CanMove while active; RSR's MovingUpdater steps aside (HIMECHAN-HOOK: Move). Requires RSR's
 /// PoslockCasting in the Himechan profile (switched on here, switched back off when the assist is turned off).
-/// Measurement logs (7.5.7.213, for tuning the stop margin): MEASURE START / FX / OK / INTERRUPTED, see Update.
+/// Measurement logs (7.5.7.213, for tuning the stop margin): MEASURE START / FX / OK / INTERRUPTED, see Measure.
 /// </summary>
 internal static class HimechanCastAssist
 {
@@ -31,11 +33,21 @@ internal static class HimechanCastAssist
 	private const int PhaseCast = 2;
 	private const long PreStopLimitMs = 1000;
 
+	// A cast GCD pressed while moving: stand still this long before re-issuing it (3 frames at 60 fps; measured 0.05s works).
+	private const long HoldMs = 50;
+	private const long HoldLimitMs = 600;
+
 	private static bool _owned;
 	private static bool _lockingNow;
 	private static bool _wasInCombat;
 	private static int _phase;
 	private static long _preStopSince;
+
+	// Held cast press (idle intercept).
+	private static uint _heldId;
+	private static ulong _heldTarget;
+	private static long _heldAt;
+	private static bool _replaying;
 
 	// Measurement state.
 	private static bool _wasCasting;
@@ -51,6 +63,7 @@ internal static class HimechanCastAssist
 	private static float _firstMoveLeft = -1f; // cast-bar time left when the character first moved after the release
 	private static bool _releasedThisCast;
 	private static float _fxLeft = -1f;
+	private static string _castSource = "manual";
 
 	/// <summary>The assist is switched on and would lock the next cast.</summary>
 	public static bool Armed { get; private set; }
@@ -114,7 +127,7 @@ internal static class HimechanCastAssist
 		Armed = settings.CastAssistMode switch
 		{
 			ModeToggle => settings.CastAssistToggleOn,
-			ModeMouseHold => InputManager.IsLeftMouseDown() && InputManager.IsRightMouseDown(),
+			ModeMouseHold => BothMouseButtonsDown(),
 			_ => false,
 		};
 
@@ -146,15 +159,20 @@ internal static class HimechanCastAssist
 					phase = PhaseCast;
 				}
 			}
+			else if (_heldId != 0)
+			{
+				phase = PhasePreCast; // a cast press is waiting for the character to stand still
+			}
 			else
 			{
 				// Pre-cast stop: a cast is expected and the GCD is about to be ready, so stand still before it fires.
-				// Expected = planned cast, or nothing planned (B, user decision 2026-10-16: manual play needs no pre-queue),
-				// or always (option C). Held for at most PreStopLimit once the GCD is ready, in case no cast ever comes.
+				// Expected = planned cast (game queue / RSR next / request / command), optionally also "nothing planned"
+				// (CastAssistStopWhenUnplanned), or always (CastAssistAlwaysStop). Held for at most PreStopLimit once the
+				// GCD is ready, in case no cast ever comes.
 				var plan = PlannedCast(out planned);
 				var expectCast = settings.CastAssistAlwaysStop
 					|| plan == RebornRotations.Healer.WHM_Himechan.NextGcdCast
-					|| plan == RebornRotations.Healer.WHM_Himechan.NextGcdNone;
+					|| (settings.CastAssistStopWhenUnplanned && plan == RebornRotations.Healer.WHM_Himechan.NextGcdNone);
 				var remain = DataCenter.DefaultGCDRemain;
 				if (expectCast && remain <= stopMargin)
 				{
@@ -203,15 +221,102 @@ internal static class HimechanCastAssist
 			HimechanLog.Write("MOVE", phase switch
 			{
 				PhaseCast => string.Format("CAST ASSIST LOCK id={0} left={1:F2}", player?.CastActionId ?? 0, left),
-				PhasePreCast => string.Format("CAST ASSIST STOP next={0} gcd={1:F2} margin={2:F2} moving={3} dt={4:F0}ms",
-					planned, DataCenter.DefaultGCDRemain, stopMargin, _movingLastFrame, Svc.Framework.UpdateDelta.TotalMilliseconds),
+				PhasePreCast => string.Format("CAST ASSIST STOP next={0} gcd={1:F2} margin={2:F2} moving={3} dt={4:F0}ms{5}",
+					planned, DataCenter.DefaultGCDRemain, stopMargin, _movingLastFrame, Svc.Framework.UpdateDelta.TotalMilliseconds,
+					_heldId != 0 ? " held=" + _heldId : string.Empty),
 				_ => string.Format("CAST ASSIST RELEASE left={0:F2}", left),
 			});
 		}
 
+		ReplayHeldCast(player, casting, moving);
+
 		_movingLastFrame = moving;
 		var manager = ActionManager.Instance();
 		_queuedLastFrame = manager != null && manager->ActionQueued;
+	}
+
+	/// <summary>
+	/// Input hook (after the opener / DoT / smart-target checks): a cast GCD pressed directly while the character is
+	/// moving would start and be interrupted within ~60 ms. While armed we swallow the press, stop the character and
+	/// re-issue it a few frames later (ReplayHeldCast). The game's own queue executions (useType 1) are not touched:
+	/// the pre-cast stop already knows about them.
+	/// </summary>
+	public static bool TryHoldCastInput(uint actionType, uint actionId, ulong targetObjectId, uint useType)
+	{
+		if (_replaying || actionType != 1 || useType == 1 || !Active || !Armed || _heldId != 0)
+		{
+			return false;
+		}
+
+		var player = Player.Object;
+		if (player == null || player.IsCasting || !_movingLastFrame)
+		{
+			return false;
+		}
+
+		var adjusted = Service.GetAdjustedActionId(actionId);
+		if (!RebornRotations.Healer.WHM_Himechan.IsGcdActionId(adjusted) || !RebornRotations.Healer.WHM_Himechan.NeedsCastFor(adjusted)
+			|| Array.IndexOf(ActionBasicInfo.ActionsNoNeedCasting, adjusted) >= 0)
+		{
+			return false;
+		}
+
+		// With more GCD left than the stop margin the game only queues the press, and the pre-cast stop handles it.
+		if (DataCenter.DefaultGCDRemain > Math.Clamp(HimechanSettings.Current.CastAssistStopMargin, 0f, 0.5f) + 0.02f)
+		{
+			return false;
+		}
+
+		_heldId = actionId;
+		_heldTarget = targetObjectId;
+		_heldAt = Environment.TickCount64;
+		Service.CanMove = false; // stop this very frame, not on the next update
+		_owned = true;
+		HimechanLog.Write("MOVE", string.Format("CAST ASSIST HOLD id={0} gcd={1:F2}", adjusted, DataCenter.DefaultGCDRemain));
+		return true;
+	}
+
+	private static unsafe void ReplayHeldCast(IBattleChara? player, bool casting, bool moving)
+	{
+		if (_heldId == 0)
+		{
+			return;
+		}
+
+		var waited = Environment.TickCount64 - _heldAt;
+		if (!Armed || casting || waited > HoldLimitMs)
+		{
+			HimechanLog.Write("MOVE", string.Format("CAST ASSIST HOLD DROP id={0} waited={1}ms armed={2} casting={3}", _heldId, waited, Armed, casting));
+			_heldId = 0;
+			return;
+		}
+
+		if (waited < HoldMs || moving || player == null)
+		{
+			return;
+		}
+
+		var manager = ActionManager.Instance();
+		if (manager == null)
+		{
+			_heldId = 0;
+			return;
+		}
+
+		_replaying = true;
+		bool ok;
+		try
+		{
+			ok = manager->UseAction(ActionType.Action, _heldId, _heldTarget);
+		}
+		finally
+		{
+			_replaying = false;
+		}
+
+		_castSource = "held";
+		HimechanLog.Write("MOVE", string.Format("CAST ASSIST HOLD REPLAY id={0} waited={1}ms ok={2}", _heldId, waited, ok));
+		_heldId = 0;
 	}
 
 	/// <summary>
@@ -231,13 +336,15 @@ internal static class HimechanCastAssist
 			if (Armed)
 			{
 				var sinceStop = _stopEngagedAt > 0 ? (Environment.TickCount64 - _stopEngagedAt) / 1000f : -1f;
-				var source = _queuedLastFrame ? "queue"
+				var source = _castSource == "held" ? "held"
+					: _queuedLastFrame ? "queue"
 					: DataCenter.State && Updaters.ActionUpdater.NextGCDAction?.AdjustedID == _castId ? "rsr" : "manual";
 				var tweak = ActionManagerEx.Instance.AnimationLockTweak;
 				HimechanLog.Write("MOVE", string.Format(
 					"CAST ASSIST MEASURE START id={0} bar={1:F2} src={2} sinceStop={3:F2} stopGcd={4:F2} margin={5:F2} movingBefore={6} movingAtStop={7} rtt={8:F3}",
 					_castId, player.TotalCastTime, source, sinceStop, _stopGcdRemain, stopMargin, _movingLastFrame, _movingAtStop, tweak.DelayAverage));
 			}
+			_castSource = "manual";
 		}
 
 		if (casting && _releasedThisCast && moving && _firstMoveLeft < 0f)
@@ -247,11 +354,12 @@ internal static class HimechanCastAssist
 
 		if (_wasCasting && !casting && _castId != 0)
 		{
-			var interrupted = _lastCastLeft > slide + 0.15f;
+			// The client ends the cast at the bar end (left 0); the server effect arrives around 0.47. Anything else is a cancel.
+			var interrupted = _lastCastLeft > 0.1f;
 			var sinceStart = (Environment.TickCount64 - _castStartedAt) / 1000f;
 			HimechanLog.Write("MOVE", interrupted
-				? string.Format("CAST ASSIST MEASURE INTERRUPTED id={0} left={1:F2} sinceStart={2:F2} hadStop={3} armed={4}",
-					_castId, _lastCastLeft, sinceStart, _stopEngagedAt > 0, Armed)
+				? string.Format("CAST ASSIST MEASURE INTERRUPTED id={0} left={1:F2} sinceStart={2:F2} hadStop={3} armed={4} slideAt={5:F2}",
+					_castId, _lastCastLeft, sinceStart, _stopEngagedAt > 0, Armed, _firstMoveLeft)
 				: string.Format("CAST ASSIST MEASURE OK id={0} slideAt={1:F2} fxLeft={2:F2} armed={3}",
 					_castId, _firstMoveLeft, _fxLeft, Armed));
 			_castId = 0;
@@ -284,6 +392,7 @@ internal static class HimechanCastAssist
 		_preStopSince = 0;
 		_phase = PhaseNone;
 		_stopEngagedAt = 0;
+		_heldId = 0;
 		if (_owned)
 		{
 			_owned = false;
@@ -333,6 +442,54 @@ internal static class HimechanCastAssist
 			return RebornRotations.Healer.WHM_Himechan.NextGcdNone;
 		}
 	}
+
+	#region Mouse state
+	// The game's InputManager reflects the previous tick, so a press made between frames is seen one frame late and the
+	// character already moved for that frame (game log 2026-10-16: pressing L+R mid-cast cancelled the cast). The Win32
+	// state is live, and Framework.Update runs before the game's own tick, so the lock lands in the same frame as the press.
+	private const int VkLButton = 0x01;
+	private const int VkRButton = 0x02;
+	private static bool _win32Failed;
+
+	[DllImport("user32.dll")]
+	private static extern short GetAsyncKeyState(int vKey);
+
+	[DllImport("user32.dll")]
+	private static extern nint GetForegroundWindow();
+
+	[DllImport("user32.dll")]
+	private static extern uint GetWindowThreadProcessId(nint hWnd, out uint processId);
+
+	private static bool BothMouseButtonsDown()
+	{
+		if (InputManager.IsLeftMouseDown() && InputManager.IsRightMouseDown())
+		{
+			return true;
+		}
+
+		if (_win32Failed)
+		{
+			return false;
+		}
+
+		try
+		{
+			_ = GetWindowThreadProcessId(GetForegroundWindow(), out var pid);
+			if (pid != Environment.ProcessId)
+			{
+				return false; // the game window is not in front: the buttons belong to another program
+			}
+
+			return (GetAsyncKeyState(VkLButton) & 0x8000) != 0 && (GetAsyncKeyState(VkRButton) & 0x8000) != 0;
+		}
+		catch (Exception ex)
+		{
+			_win32Failed = true;
+			PluginLog.Warning($"[Himechan] Cast assist: live mouse state unavailable, using the game's input state only: {ex.Message}");
+			return false;
+		}
+	}
+	#endregion
 }
 
 /// <summary>Yellow "CAST ASSIST" text shown while the assist is armed. Unlocked: always visible and draggable (position saved).</summary>

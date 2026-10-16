@@ -49,10 +49,13 @@ internal sealed class HimechanSettings
 	public int CastAssistMode { get; set; } = HimechanCastAssist.ModeOff;
 
 	/// <summary>Pre-cast stop: stand still this many seconds before a planned cast GCD is ready (also the HUD "정지" margin).</summary>
-	public float CastAssistStopMargin { get; set; } = 0.2f;
+	public float CastAssistStopMargin { get; set; } = 0.1f; // measured 2026-10-16: 0.05 worked 30/30 on a dummy; 0.1 leaves one more frame
 
-	/// <summary>Option C: stop before every GCD, even when the planned next GCD is instant (default B: stop unless an instant is planned).</summary>
+	/// <summary>Option C: stop before every GCD, even when the planned next GCD is instant.</summary>
 	public bool CastAssistAlwaysStop { get; set; } = false;
+
+	/// <summary>Option B: also stop when nothing is planned (manual play without pre-queue). Off since 2026-10-16 evening: idle movement stays free, a cast pressed while moving is held and re-issued instead.</summary>
+	public bool CastAssistStopWhenUnplanned { get; set; } = false;
 
 	/// <summary>Toggle mode: switch the toggle off when combat ends.</summary>
 	public bool CastAssistAutoOff { get; set; } = true;

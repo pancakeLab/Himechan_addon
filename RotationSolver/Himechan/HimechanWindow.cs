@@ -163,7 +163,15 @@ internal sealed class HimechanWindow : Window
 		{
 			HimechanSettings.Save();
 		}
-		ImGui.TextWrapped("HUD의 주황 \"정지\" 표시도 같은 값을 씁니다. 시전이 시작되자마자 끊기면(로그 CAST ASSIST MEASURE INTERRUPTED) 값을 올리세요. 다음 GCD 계획이 없을 때(수동 모드)도 시전이 온다고 보고 멈춥니다. RSR이 디아·백합 같은 즉시 시전을 계획했을 때만 멈추지 않습니다. 디버그 모드에서는 시전마다 측정 로그(MEASURE START/FX/OK)가 남습니다. 0.2 → 0.1 → 0.05 → 0 순으로 내리며 20~30 GCD씩 시험해 보세요.");
+		ImGui.TextWrapped("HUD의 주황 \"정지\" 표시도 같은 값을 씁니다. 시전이 시작되자마자 끊기면(로그 CAST ASSIST MEASURE INTERRUPTED) 값을 올리세요. 다음 GCD 계획(게임 선입력·RSR 다음 GCD)이 시전형일 때 멈춥니다. 계획이 없을 때는 자유롭게 움직이고, 움직이는 중에 시전 주문을 누르면 잠깐 멈춘 뒤(약 0.05초) 자동으로 시전합니다. 디버그 모드에서는 시전마다 측정 로그(MEASURE START/FX/OK)가 남습니다.");
+
+		var unplanned = settings.CastAssistStopWhenUnplanned;
+		if (ImGui.Checkbox("계획이 없어도 GCD 준비 직전에 정지 (수동 모드에서 미리 멈춤)", ref unplanned))
+		{
+			settings.CastAssistStopWhenUnplanned = unplanned;
+			HimechanSettings.Save();
+		}
+		ImGui.TextWrapped("켜면 시전할 것이 없을 때도 GCD가 준비될 때마다 최대 1초 멈춥니다. 평시 이동이 거슬리면 끄세요(기본 꺼짐).");
 
 		var alwaysStop = settings.CastAssistAlwaysStop;
 		if (ImGui.Checkbox("항상 정지 (다음 GCD가 즉시 시전이어도 준비 직전에 멈춤)", ref alwaysStop))
@@ -171,7 +179,7 @@ internal sealed class HimechanWindow : Window
 			settings.CastAssistAlwaysStop = alwaysStop;
 			HimechanSettings.Save();
 		}
-		ImGui.TextWrapped("계획이 마지막 순간에 바뀌어 끊기는 일까지 막는 가장 확실한 방식. 대신 디아·백합 때도 약 0.2초 멈춥니다.");
+		ImGui.TextWrapped("계획이 마지막 순간에 바뀌어 끊기는 일까지 막는 가장 확실한 방식. 대신 디아·백합 때도 잠깐 멈춥니다.");
 
 		if (mode == HimechanCastAssist.ModeToggle)
 		{

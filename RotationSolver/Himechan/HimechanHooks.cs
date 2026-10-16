@@ -197,6 +197,11 @@ internal static class HimechanHooks
 				return true; // #33: re-issued on an enemy (or dropped when none is around)
 			}
 
+			if (HimechanCastAssist.TryHoldCastInput(actionType, actionId, targetObjectId, useType))
+			{
+				return true; // #37: a cast pressed while moving is re-issued once the character stands still
+			}
+
 			return whm.OnPlayerAbilityInput(actionType, actionId, targetObjectId, useType);
 		}
 		catch (Exception ex)
