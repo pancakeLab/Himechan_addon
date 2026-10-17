@@ -45,7 +45,7 @@
         "Name":  "히메짱 옷장 정리기",
         "InternalName":  "KRWardrobeCleaner",
         "AssemblyVersion":  "0.8.1.0",
-        "TestingAssemblyVersion":  "0.11.6.0",
+        "TestingAssemblyVersion":  "0.11.7.0",
         "Description":  "4개 탭으로 분리된 FF14 장비 정리 도구. 옷장 복원, 옷장 저장, 장비함 이동, 스마트 자동 파기와 4번 인벤토리 전체 파기를 지원합니다.\n\n한국 서버 전용입니다. 소스는 비공개이며 이 저장소는 배포 전용입니다.",
         "Punchline":  "만사가 귀찮은 공주님들을 위한 자동 정리 집사님!",
         "ApplicableVersion":  "any",
@@ -76,9 +76,9 @@
         "AcceptsFeedback":  false,
         "DownloadLinkInstall":  "https://github.com/pancakeLab/KRWardrobeCleaner/releases/download/v0.8.1.0/KRWardrobeCleaner.zip",
         "DownloadLinkUpdate":  "https://github.com/pancakeLab/KRWardrobeCleaner/releases/download/v0.8.1.0/KRWardrobeCleaner.zip",
-        "DownloadLinkTesting":  "https://github.com/pancakeLab/KRWardrobeCleaner/releases/download/v0.11.6.0/KRWardrobeCleaner.zip",
-        "Changelog":  "테스트 빌드 0.11.6.0 (안정판 0.8.1.0)\n\n히메짱 옷장 정리기 0.11.6.0\n\n테스트 빌드입니다. Dalamud에서 이 플러그인의 테스트 버전 수신을 켠 사용자에게만 제공됩니다.\n\n- 2. 가방 → 옷장 단벌 맡기기: 콜백 기록으로 확인한 실제 게임 콜백(14, 행, 0)을 보내도록 교체. 이전 값은 옷장을 닫는 명령이었음\n- 단벌 맡기기 방식 선택(기록된 콜백 / 에이전트 플래그 / 직접 지정), 확인 창이 안 뜨면 항목 실패 후 2회 연속 시 중지\n\n- KRWardrobeCleaner.zip SHA256: 25C73A0D38DC084C3B3A51DB918893725527B047E79933B32220F2CC557A9F10",
-        "LastUpdate":  1792243851,
+        "DownloadLinkTesting":  "https://github.com/pancakeLab/KRWardrobeCleaner/releases/download/v0.11.7.0/KRWardrobeCleaner.zip",
+        "Changelog":  "테스트 빌드 0.11.7.0 (안정판 0.8.1.0)\n\n히메짱 옷장 정리기 0.11.7.0\n\n테스트 빌드: 맡기기 확인 창 인식 수정 (AtkValues 문구 읽기, 시간 기반 판정, 남은 창 처리, 기록된 Yes 콜백). 게임 미확인.\n\n- KRWardrobeCleaner.zip SHA256: 011BD93F665AE42D936A56D48D0965CE03CF42028FEFD84D7EBAE410B4AB5601",
+        "LastUpdate":  1792245339,
         "DownloadCount":  0
     }
 ]
