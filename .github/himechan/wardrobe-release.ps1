@@ -70,6 +70,7 @@ $entry = [ordered]@{
     Punchline              = '만사가 귀찮은 공주님들을 위한 자동 정리 집사님!'
     ApplicableVersion      = $m.ApplicableVersion
     RepoUrl                = "https://github.com/$Repo"
+    IconUrl                = "https://raw.githubusercontent.com/$Repo/main/KRWardrobeCleaner/images/icon.png"
     Tags                   = @('환상의 옷장', '추억의 보관함', '장비함', '투영세트', '자동 정리', 'glamour', 'inventory', 'armoire', 'utility', 'korean')
     CategoryTags           = @('inventory')
     DalamudApiLevel        = $m.DalamudApiLevel
