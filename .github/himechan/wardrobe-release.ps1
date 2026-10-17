@@ -14,7 +14,7 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
-$PluginmasterPath = Join-Path (Get-Location).Path $PluginmasterPath   # .NET File APIs use the process cwd, not the PowerShell location
+if (-not [IO.Path]::IsPathRooted($PluginmasterPath)) { $PluginmasterPath = Join-Path (Get-Location).Path $PluginmasterPath }   # .NET File APIs use the process cwd, not the PowerShell location
 Add-Type -AssemblyName System.IO.Compression.FileSystem
 
 if (-not (Test-Path $ZipPath)) { throw "zip not found: $ZipPath" }
