@@ -44,8 +44,8 @@
         "Author":  "pancakeLab",
         "Name":  "히메짱 옷장 정리기",
         "InternalName":  "KRWardrobeCleaner",
-        "AssemblyVersion":  "0.12.0.0",
-        "TestingAssemblyVersion":  "0.12.0.0",
+        "AssemblyVersion":  "0.12.1.0",
+        "TestingAssemblyVersion":  "0.12.1.0",
         "Description":  "4개 탭으로 분리된 FF14 장비 정리 도구. 옷장 복원, 옷장 저장, 장비함 이동, 스마트 자동 파기와 4번 인벤토리 전체 파기를 지원합니다.\n\n한국 서버 전용입니다. 소스는 비공개이며 이 저장소는 배포 전용입니다.",
         "Punchline":  "만사가 귀찮은 공주님들을 위한 자동 정리 집사님!",
         "ApplicableVersion":  "any",
@@ -75,11 +75,11 @@
         "IsTestingExclusive":  false,
         "IsHide":  false,
         "AcceptsFeedback":  false,
-        "DownloadLinkInstall":  "https://github.com/pancakeLab/KRWardrobeCleaner/releases/download/v0.12.0.0/KRWardrobeCleaner.zip",
-        "DownloadLinkUpdate":  "https://github.com/pancakeLab/KRWardrobeCleaner/releases/download/v0.12.0.0/KRWardrobeCleaner.zip",
-        "DownloadLinkTesting":  "https://github.com/pancakeLab/KRWardrobeCleaner/releases/download/v0.12.0.0/KRWardrobeCleaner.zip",
-        "Changelog":  "히메짱 옷장 정리기 0.12.0.0\n\n안정판 0.12.0.0: UI 개편, 단벌 맡기기 수정(확인 창 자동 확인, 목록 갱신 대기, 선택 아이템 대조), 옷장 중복 정리, 장비함 ↔ 가방 이동, 직업·레벨·옷장 보유 필터, 플러그인 아이콘.\n\n- KRWardrobeCleaner.zip SHA256: 4DC104588F9DCB4E6CA820EF07CB03D7F40339B874FAE6CE255B1189DB66E9A0",
-        "LastUpdate":  1792247712,
+        "DownloadLinkInstall":  "https://github.com/pancakeLab/KRWardrobeCleaner/releases/download/v0.12.1.0/KRWardrobeCleaner.zip",
+        "DownloadLinkUpdate":  "https://github.com/pancakeLab/KRWardrobeCleaner/releases/download/v0.12.1.0/KRWardrobeCleaner.zip",
+        "DownloadLinkTesting":  "https://github.com/pancakeLab/KRWardrobeCleaner/releases/download/v0.12.1.0/KRWardrobeCleaner.zip",
+        "Changelog":  "히메짱 옷장 정리기 0.12.1.0\n\n0.12.1: 모든 목록에서 아이템 이름 앞에 게임 아이콘 표시. 0.12.0: UI 개편, 단벌 맡기기 수정(확인 창 자동 확인, 목록 갱신 대기, 선택 아이템 대조), 플러그인 아이콘.\n\n- KRWardrobeCleaner.zip SHA256: 30E472DAA8DC6261650042DD536CB4C07A17F141C2161246AD0C5D5720B7B225",
+        "LastUpdate":  1792247757,
         "DownloadCount":  0
     }
 ]
