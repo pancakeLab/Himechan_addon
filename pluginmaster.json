@@ -45,7 +45,7 @@
         "Name":  "히메짱 옷장 정리기",
         "InternalName":  "KRWardrobeCleaner",
         "AssemblyVersion":  "0.8.1.0",
-        "TestingAssemblyVersion":  "0.11.0.0",
+        "TestingAssemblyVersion":  "0.11.1.0",
         "Description":  "4개 탭으로 분리된 FF14 장비 정리 도구. 옷장 복원, 옷장 저장, 장비함 이동, 스마트 자동 파기와 4번 인벤토리 전체 파기를 지원합니다.\n\n한국 서버 전용입니다. 소스는 비공개이며 이 저장소는 배포 전용입니다.",
         "Punchline":  "만사가 귀찮은 공주님들을 위한 자동 정리 집사님!",
         "ApplicableVersion":  "any",
@@ -76,9 +76,9 @@
         "AcceptsFeedback":  false,
         "DownloadLinkInstall":  "https://github.com/pancakeLab/KRWardrobeCleaner/releases/download/v0.8.1.0/KRWardrobeCleaner.zip",
         "DownloadLinkUpdate":  "https://github.com/pancakeLab/KRWardrobeCleaner/releases/download/v0.8.1.0/KRWardrobeCleaner.zip",
-        "DownloadLinkTesting":  "https://github.com/pancakeLab/KRWardrobeCleaner/releases/download/v0.11.0.0/KRWardrobeCleaner.zip",
-        "Changelog":  "테스트 빌드 0.11.0.0 (안정판 0.8.1.0)\n\n히메짱 옷장 정리기 0.11.0.0\n\n테스트 빌드입니다. Dalamud에서 이 플러그인의 테스트 버전 수신을 켠 사용자에게만 제공됩니다.\n\n- 2. 가방 → 옷장 탭에도 직업/착용 레벨/옷장 보유 필터 적용(3번 탭과 설정 공유)\n- 작업 중 진행률 막대, 목록 이름 검색·체크한 것만 보기, 파기 전 확인 창, 탭 툴팁\n- 0.10 내용(장비함 ↔ 가방 양방향, 필터, 표 UI)과 0.9 내용(옷장 중복 정리, 세트 저장 수정, 디버그 로그) 포함\n\n- KRWardrobeCleaner.zip SHA256: A85262402C800568716A78D41D4FD97B6BC4E0C85A07977A5AA025F76AE86426",
-        "LastUpdate":  1792240116,
+        "DownloadLinkTesting":  "https://github.com/pancakeLab/KRWardrobeCleaner/releases/download/v0.11.1.0/KRWardrobeCleaner.zip",
+        "Changelog":  "테스트 빌드 0.11.1.0 (안정판 0.8.1.0)\n\n히메짱 옷장 정리기 0.11.1.0\n\n테스트 빌드입니다. Dalamud에서 이 플러그인의 테스트 버전 수신을 켠 사용자에게만 제공됩니다.\n\n- 2. 가방 → 옷장: 게임의 맡기기 목록은 가방 아이템만 담고 있어 장비함 아이템이 안 들어가던 문제 수정 — 장비함 장비는 저장 직전에 가방으로 옮긴 뒤 맡김(단벌·세트 모두, 가방 빈칸 필요)\n- 직업 필터에서 체크할 때 목록이 접히던 문제 수정\n- 예/아니오 확인 창 문구를 디버그 로그에 기록\n\n- KRWardrobeCleaner.zip SHA256: 1BE6FA6B307A38AC24B592CA82C888A348281799C0E4368870D88FC472BBF7D4",
+        "LastUpdate":  1792241013,
         "DownloadCount":  0
     }
 ]
