@@ -45,7 +45,7 @@
         "Name":  "히메짱 옷장 정리기",
         "InternalName":  "KRWardrobeCleaner",
         "AssemblyVersion":  "0.11.7.0",
-        "TestingAssemblyVersion":  "0.11.8.0",
+        "TestingAssemblyVersion":  "0.12.0.0",
         "Description":  "4개 탭으로 분리된 FF14 장비 정리 도구. 옷장 복원, 옷장 저장, 장비함 이동, 스마트 자동 파기와 4번 인벤토리 전체 파기를 지원합니다.\n\n한국 서버 전용입니다. 소스는 비공개이며 이 저장소는 배포 전용입니다.",
         "Punchline":  "만사가 귀찮은 공주님들을 위한 자동 정리 집사님!",
         "ApplicableVersion":  "any",
@@ -77,9 +77,9 @@
         "AcceptsFeedback":  false,
         "DownloadLinkInstall":  "https://github.com/pancakeLab/KRWardrobeCleaner/releases/download/v0.11.7.0/KRWardrobeCleaner.zip",
         "DownloadLinkUpdate":  "https://github.com/pancakeLab/KRWardrobeCleaner/releases/download/v0.11.7.0/KRWardrobeCleaner.zip",
-        "DownloadLinkTesting":  "https://github.com/pancakeLab/KRWardrobeCleaner/releases/download/v0.11.8.0/KRWardrobeCleaner.zip",
-        "Changelog":  "테스트 빌드 0.11.8.0 (안정판 0.11.7.0)\n\n히메짱 옷장 정리기 0.11.8.0\n\n테스트 빌드: 맡기기 목록이 갱신되기 전에는 요청하지 않음(다른 아이템이 저장되던 문제), 확인 전 게임 선택 아이템 대조, 대기 시간 단축, 플러그인 아이콘. 게임 미확인.\n\n- KRWardrobeCleaner.zip SHA256: 2C6ED1298D01F9FCF1D71B0421D4D9CA59EE8AE91283D1A0BC03C13A5C692531",
-        "LastUpdate":  1792247201,
+        "DownloadLinkTesting":  "https://github.com/pancakeLab/KRWardrobeCleaner/releases/download/v0.12.0.0/KRWardrobeCleaner.zip",
+        "Changelog":  "테스트 빌드 0.12.0.0 (안정판 0.11.7.0)\n\n히메짱 옷장 정리기 0.12.0.0\n\n테스트 빌드: UI 개편(요약 카드, 아이콘 버튼, 상태 칩, 옵션 팝업, 모든 탭 동일 구성) + 0.11.8의 맡기기 목록 갱신 대기·선택 아이템 대조·속도 개선 + 플러그인 아이콘. 게임 미확인.\n\n- KRWardrobeCleaner.zip SHA256: 4DC104588F9DCB4E6CA820EF07CB03D7F40339B874FAE6CE255B1189DB66E9A0",
+        "LastUpdate":  1792247305,
         "DownloadCount":  0
     }
 ]
