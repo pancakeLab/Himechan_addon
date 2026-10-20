@@ -136,7 +136,7 @@ public sealed partial class WHM_Himechan
 	}
 
 	/// <summary>Adjusted cast time of the filler (Glare III / Glare / Stone) in seconds: spell speed and Presence of Mind included. 0 when unknown.</summary>
-	internal float FillerCastTime
+	internal unsafe float FillerCastTime
 	{
 		get
 		{
