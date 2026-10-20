@@ -124,8 +124,34 @@ public sealed partial class WHM_Himechan
 		Tooltip = "선모션 약 0.6초 + 서버 지연. 측정된 지연이 크면 그만큼 자동으로 올라갑니다. 글레어 시전 뒤 틈이 약 0.96초이므로 0.85 이상이면 그 틈에 자동 능력이 거의 못 들어갑니다.")]
 	public float AutoWeaveBudget { get; set; } = 0.75f;
 
-	/// <summary>The configured budget, raised when the observed animation-lock delay says 0.6s + delay is longer.</summary>
-	internal float AutoWeaveBudgetNow => WHMHimechanPolicy.AutoBudget(AutoWeaveBudget, ActionManagerEx.Instance.GetAnimationLockDelayEstimate());
+	/// <summary>The configured budget, raised when the observed animation-lock delay says 0.6s + delay is longer; capped under haste (Presence of Mind).</summary>
+	internal float AutoWeaveBudgetNow
+	{
+		get
+		{
+			var delay = ActionManagerEx.Instance.GetAnimationLockDelayEstimate();
+			var floor = float.IsFinite(delay) && delay >= 0f ? 0.6f + delay : 0.75f;
+			return WHMHimechanPolicy.HasteCap(WHMHimechanPolicy.AutoBudget(AutoWeaveBudget, delay), DataCenter.DefaultGCDTotal, FillerCastTime, floor);
+		}
+	}
+
+	/// <summary>Adjusted cast time of the filler (Glare III / Glare / Stone) in seconds: spell speed and Presence of Mind included. 0 when unknown.</summary>
+	internal float FillerCastTime
+	{
+		get
+		{
+			try
+			{
+				var filler = GlareIiiPvE.EnoughLevel ? GlareIiiPvE : GlarePvE.EnoughLevel ? GlarePvE : StonePvE;
+				var ms = ActionManager.GetAdjustedCastTime(ActionType.Action, filler.AdjustedID);
+				return ms > 0 ? ms / 1000f : 0f;
+			}
+			catch
+			{
+				return 0f;
+			}
+		}
+	}
 
 	/// <summary>Execution-time recheck (DoAction) of an ability this rotation picked; explicit commands, opener and raise keep their own rules.</summary>
 	internal bool ValidateMaintenanceAction(IAction? action)

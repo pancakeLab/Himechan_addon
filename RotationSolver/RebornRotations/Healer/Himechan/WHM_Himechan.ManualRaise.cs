@@ -57,6 +57,14 @@ public sealed partial class WHM_Himechan
 			return; // Repeated macro presses must not reset preparation.
 		}
 
+		// Game log 2026-10-21: a second request during the hard-cast Raise restarted the request (held RSR for 5 s, then
+		// "expired" while the cast was still running). The running cast is the request being fulfilled.
+		if (Player?.IsCasting == true && IsRaiseAction(Player.CastActionId))
+		{
+			Svc.Chat.Print("[히메짱] 레이즈를 이미 시전 중입니다.");
+			return;
+		}
+
 		if (!IsEnabled || !DataCenter.State || Player == null || Player.IsDead || DataCenter.IsPvP)
 		{
 			Svc.Chat.Print("[히메짱] 히메짱 WHM과 RSR을 켠 생존 상태에서 요청하세요.");

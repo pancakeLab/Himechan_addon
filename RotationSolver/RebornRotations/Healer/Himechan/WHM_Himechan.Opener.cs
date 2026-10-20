@@ -108,10 +108,12 @@ public sealed partial class WHM_Himechan
 			RecordHimechanDiagnostic(string.Format("OP QUEUE CLEAR id={0}", _openerPending));
 		}
 
+		// Only an actual stop is logged: the raise priority calls this every frame while a raise request runs (game log 2026-10-21).
 		if (_opening != Opening.Idle)
 		{
 			ECommons.Logging.PluginLog.Information($"[Himechan opener] {_opening}: {reason}");
 			ActionUpdater.ClearNextAction();
+			RecordHimechanDiagnostic($"오프너 종료: {reason}");
 		}
 
 		_opening = Opening.Idle;
@@ -119,7 +121,6 @@ public sealed partial class WHM_Himechan
 		_openerSelected = null;
 		_openerExpected = 0;
 		_openerStatus = reason;
-		RecordHimechanDiagnostic($"오프너 종료: {reason}");
 	}
 
 	// Only combat action/item calls are gated; movement, UI and RSR OFF remain available.

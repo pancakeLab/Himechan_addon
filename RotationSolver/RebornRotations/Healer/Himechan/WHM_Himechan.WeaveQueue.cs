@@ -124,7 +124,8 @@ public sealed partial class WHM_Himechan
 	}
 
 	/// <summary>Tail rule for RSR command abilities and queue replays: the player's threshold, not the automatic budget.</summary>
-	internal bool ManualWeaveFits(float remain) => remain > WHMHimechanPolicy.ManualTail(ManualWeaveTail);
+	internal bool ManualWeaveFits(float remain) =>
+		remain > WHMHimechanPolicy.HasteCap(WHMHimechanPolicy.ManualTail(ManualWeaveTail), DataCenter.DefaultGCDTotal, FillerCastTime, 0.6f);
 
 	// 2026-10-14 user decision: potions and food are oGCD actions too. They sit at the very top of the order; by default they
 	// ignore weaving (used at once, no gap bookkeeping), the option turns them into normal queue entries.

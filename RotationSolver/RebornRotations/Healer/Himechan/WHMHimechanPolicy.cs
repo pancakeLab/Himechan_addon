@@ -39,6 +39,22 @@ internal static class WHMHimechanPolicy
 		return Math.Max(value, floor);
 	}
 
+	/// <summary>
+	/// Haste cap (game log 2026-10-21, Presence of Mind): with a 1.93s GCD and a 1.17s cast the post-cast gap is ~0.76s
+	/// minus the 0.1s cast lock, so a 0.75s threshold could never be met and every ability waited for an instant GCD.
+	/// The threshold may not exceed (GCD - cast - 0.15), but never drops below the floor (0.6s + delay).
+	/// </summary>
+	internal static float HasteCap(float threshold, float gcdTotal, float castTime, float floor)
+	{
+		if (!float.IsFinite(gcdTotal) || gcdTotal <= 0f || !float.IsFinite(castTime) || castTime <= 0f)
+		{
+			return threshold;
+		}
+
+		var cap = Math.Max(float.IsFinite(floor) ? floor : 0.6f, gcdTotal - castTime - 0.15f);
+		return Math.Min(threshold, cap);
+	}
+
 	/// <summary>No GCD is planned (e.g. downtime): nothing can be clipped, so only casting / lock / game queue block an ability.</summary>
 	internal static bool CanUseWithoutGcd(float animationLock, bool casting, bool queued) =>
 		!casting && !queued && float.IsFinite(animationLock) && animationLock <= 0f;

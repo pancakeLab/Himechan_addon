@@ -174,7 +174,9 @@ internal static class HimechanCastAssist
 					|| plan == RebornRotations.Healer.WHM_Himechan.NextGcdCast
 					|| (settings.CastAssistStopWhenUnplanned && plan == RebornRotations.Healer.WHM_Himechan.NextGcdNone);
 				var remain = DataCenter.DefaultGCDRemain;
-				if (expectCast && remain <= stopMargin)
+				// Sticky (game log 2026-10-21): between the game queue firing and IsCasting turning on there can be one frame
+				// with nothing planned; releasing there let the character step once and the cast was interrupted at 0.11s.
+				if ((expectCast || _preStopSince != 0) && remain <= stopMargin)
 				{
 					if (_preStopSince == 0)
 					{
@@ -223,7 +225,7 @@ internal static class HimechanCastAssist
 				PhaseCast => string.Format("CAST ASSIST LOCK id={0} left={1:F2}", player?.CastActionId ?? 0, left),
 				PhasePreCast => string.Format("CAST ASSIST STOP next={0} gcd={1:F2} margin={2:F2} moving={3} dt={4:F0}ms{5}",
 					planned, DataCenter.DefaultGCDRemain, stopMargin, _movingLastFrame, Svc.Framework.UpdateDelta.TotalMilliseconds,
-					_heldId != 0 ? " held=" + _heldId : string.Empty),
+					_heldId != 0 ? " held=" + Service.GetAdjustedActionId(_heldId) : string.Empty),
 				_ => string.Format("CAST ASSIST RELEASE left={0:F2}", left),
 			});
 		}
@@ -284,14 +286,18 @@ internal static class HimechanCastAssist
 		}
 
 		var waited = Environment.TickCount64 - _heldAt;
-		if (!Armed || casting || waited > HoldLimitMs)
+		if (casting || waited > HoldLimitMs || player == null)
 		{
-			HimechanLog.Write("MOVE", string.Format("CAST ASSIST HOLD DROP id={0} waited={1}ms armed={2} casting={3}", _heldId, waited, Armed, casting));
+			HimechanLog.Write("MOVE", string.Format("CAST ASSIST HOLD DROP id={0} waited={1}ms armed={2} casting={3}",
+				Service.GetAdjustedActionId(_heldId), waited, Armed, casting));
 			_heldId = 0;
 			return;
 		}
 
-		if (waited < HoldMs || moving || player == null)
+		// Game log 2026-10-21: releasing the mouse buttons right after the press (stop walking, then heal) disarmed the assist
+		// and the press was dropped. Disarmed = give the press back at once, exactly as the game would have taken it.
+		var disarmed = !Armed;
+		if (!disarmed && (waited < HoldMs || moving))
 		{
 			return;
 		}
@@ -315,7 +321,8 @@ internal static class HimechanCastAssist
 		}
 
 		_castSource = "held";
-		HimechanLog.Write("MOVE", string.Format("CAST ASSIST HOLD REPLAY id={0} waited={1}ms ok={2}", _heldId, waited, ok));
+		HimechanLog.Write("MOVE", string.Format("CAST ASSIST HOLD REPLAY id={0} waited={1}ms ok={2}{3}",
+			Service.GetAdjustedActionId(_heldId), waited, ok, disarmed ? " disarmed" : string.Empty));
 		_heldId = 0;
 	}
 
@@ -358,8 +365,9 @@ internal static class HimechanCastAssist
 			var interrupted = _lastCastLeft > 0.1f;
 			var sinceStart = (Environment.TickCount64 - _castStartedAt) / 1000f;
 			HimechanLog.Write("MOVE", interrupted
-				? string.Format("CAST ASSIST MEASURE INTERRUPTED id={0} left={1:F2} sinceStart={2:F2} hadStop={3} armed={4} slideAt={5:F2}",
-					_castId, _lastCastLeft, sinceStart, _stopEngagedAt > 0, Armed, _firstMoveLeft)
+				? string.Format("CAST ASSIST MEASURE INTERRUPTED id={0} left={1:F2} sinceStart={2:F2} hadStop={3} armed={4} slideAt={5:F2} moving={6} bmrCancel={7}",
+					_castId, _lastCastLeft, sinceStart, _stopEngagedAt > 0, Armed, _firstMoveLeft, _movingLastFrame,
+					DataCenter.BMRForceCancelCast || DataCenter.BMRForceCancelCastAI)
 				: string.Format("CAST ASSIST MEASURE OK id={0} slideAt={1:F2} fxLeft={2:F2} armed={3}",
 					_castId, _firstMoveLeft, _fxLeft, Armed));
 			_castId = 0;
