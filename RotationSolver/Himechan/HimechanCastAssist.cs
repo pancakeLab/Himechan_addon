@@ -509,8 +509,8 @@ internal static class HimechanCastAssist
 				_counterLookedUp = true;
 				try
 				{
-					var field = typeof(Service).GetField("forceDisableMovementPtr", BindingFlags.NonPublic | BindingFlags.Static);
-					var value = field?.GetValue(null);
+					var pointerField = typeof(Service).GetField("forceDisableMovementPtr", BindingFlags.NonPublic | BindingFlags.Static);
+					var value = pointerField?.GetValue(null);
 					_counterPtr = value is nint p ? p : 0;
 				}
 				catch (Exception ex)
