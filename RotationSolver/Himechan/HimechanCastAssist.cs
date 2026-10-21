@@ -4,6 +4,8 @@ using ECommons.GameHelpers;
 using ECommons.Logging;
 using FFXIVClientStructs.FFXIV.Client.Game;
 using FFXIVClientStructs.FFXIV.Client.Game.Control;
+using FFXIVClientStructs.FFXIV.Client.System.Input;
+using FFXIVClientStructs.FFXIV.Client.UI;
 using System.Runtime.InteropServices;
 
 namespace RotationSolver.Himechan;
@@ -36,6 +38,9 @@ internal static class HimechanCastAssist
 	// A cast GCD pressed while moving: stand still this long before re-issuing it (3 frames at 60 fps; measured 0.05s works).
 	private const long HoldMs = 50;
 	private const long HoldLimitMs = 600;
+
+	private const long KeyBreakMs = 300;
+	private static long _keyBreakUntil;
 
 	private static bool _owned;
 	private static bool _lockingNow;
@@ -124,10 +129,23 @@ internal static class HimechanCastAssist
 		}
 		_wasInCombat = inCombat;
 
+		// Mouse mode: the lock stops every movement input, so a keyboard movement key while the buttons are held (user report
+		// 2026-10-21: could not break a hard-cast Raise with the keyboard) counts as "break the cast now" and disarms for a moment.
+		var buttons = settings.CastAssistMode == ModeMouseHold && BothMouseButtonsDown();
+		var now = Environment.TickCount64;
+		if (buttons && settings.CastAssistKeyboardBreaks && KeyboardMoveIntent())
+		{
+			if (now >= _keyBreakUntil)
+			{
+				HimechanLog.Write("MOVE", "CAST ASSIST KEY BREAK (keyboard movement while the mouse buttons are held)");
+			}
+			_keyBreakUntil = now + KeyBreakMs;
+		}
+
 		Armed = settings.CastAssistMode switch
 		{
 			ModeToggle => settings.CastAssistToggleOn,
-			ModeMouseHold => BothMouseButtonsDown(),
+			ModeMouseHold => buttons && now >= _keyBreakUntil,
 			_ => false,
 		};
 
@@ -467,6 +485,71 @@ internal static class HimechanCastAssist
 
 	[DllImport("user32.dll")]
 	private static extern uint GetWindowThreadProcessId(nint hWnd, out uint processId);
+
+	private static readonly InputId[] MoveInputs =
+	[
+		InputId.MOVE_FORE, InputId.MOVE_BACK, InputId.MOVE_LEFT, InputId.MOVE_RIGHT, InputId.MOVE_STRIFE_L, InputId.MOVE_STRIFE_R,
+	];
+
+	// Default keybinds for the Win32 fallback: W A S D Q E and the arrow keys.
+	private static readonly int[] MoveVirtualKeys = [0x57, 0x41, 0x53, 0x44, 0x51, 0x45, 0x25, 0x26, 0x27, 0x28];
+	private static bool _inputDataFailed;
+
+	/// <summary>A keyboard movement key is down: the game's own keybind state first, the default keys through Win32 as a backup.</summary>
+	private static unsafe bool KeyboardMoveIntent()
+	{
+		if (!_inputDataFailed)
+		{
+			try
+			{
+				var input = UIInputData.Instance();
+				if (input != null)
+				{
+					foreach (var id in MoveInputs)
+					{
+						if (input->IsInputIdDown(id))
+						{
+							return true;
+						}
+					}
+				}
+			}
+			catch (Exception ex)
+			{
+				_inputDataFailed = true;
+				PluginLog.Warning($"[Himechan] Cast assist: keybind state unavailable, using default keys only: {ex.Message}");
+			}
+		}
+
+		if (_win32Failed)
+		{
+			return false;
+		}
+
+		try
+		{
+			_ = GetWindowThreadProcessId(GetForegroundWindow(), out var pid);
+			if (pid != Environment.ProcessId)
+			{
+				return false;
+			}
+
+			foreach (var key in MoveVirtualKeys)
+			{
+				if ((GetAsyncKeyState(key) & 0x8000) != 0)
+				{
+					return true;
+				}
+			}
+		}
+		catch (Exception ex)
+		{
+			_win32Failed = true;
+			PluginLog.Warning($"[Himechan] Cast assist: live key state unavailable: {ex.Message}");
+		}
+
+		return false;
+	}
 
 	private static bool BothMouseButtonsDown()
 	{

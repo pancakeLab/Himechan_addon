@@ -165,6 +165,17 @@ internal sealed class HimechanWindow : Window
 		}
 		ImGui.TextWrapped("HUD의 주황 \"정지\" 표시도 같은 값을 씁니다. 시전이 시작되자마자 끊기면(로그 CAST ASSIST MEASURE INTERRUPTED) 값을 올리세요. 다음 GCD 계획(게임 선입력·RSR 다음 GCD)이 시전형일 때 멈춥니다. 계획이 없을 때는 자유롭게 움직이고, 움직이는 중에 시전 주문을 누르면 잠깐 멈춘 뒤(약 0.05초) 자동으로 시전합니다. 디버그 모드에서는 시전마다 측정 로그(MEASURE START/FX/OK)가 남습니다.");
 
+		if (mode == HimechanCastAssist.ModeMouseHold)
+		{
+			var keyboardBreaks = settings.CastAssistKeyboardBreaks;
+			if (ImGui.Checkbox("마우스 양 버튼을 누른 채 키보드 이동 키를 누르면 즉시 끊고 이동", ref keyboardBreaks))
+			{
+				settings.CastAssistKeyboardBreaks = keyboardBreaks;
+				HimechanSettings.Save();
+			}
+			ImGui.TextWrapped("양 버튼을 누르고 있는 동안은 키보드 이동도 잠기므로, 이 옵션이 꺼져 있으면 RSR 보조 키(기본 Ctrl)나 버튼을 떼야 끊을 수 있습니다. 게임 키 설정의 이동 키를 읽고, 기본 키(WASD·QE·방향키)는 예비로 함께 봅니다.");
+		}
+
 		var unplanned = settings.CastAssistStopWhenUnplanned;
 		if (ImGui.Checkbox("계획이 없어도 GCD 준비 직전에 정지 (수동 모드에서 미리 멈춤)", ref unplanned))
 		{

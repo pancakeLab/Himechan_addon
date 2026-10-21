@@ -51,6 +51,9 @@ internal sealed class HimechanSettings
 	/// <summary>Pre-cast stop: stand still this many seconds before a planned cast GCD is ready (also the HUD "정지" margin).</summary>
 	public float CastAssistStopMargin { get; set; } = 0.1f; // measured 2026-10-16: 0.05 worked 30/30 on a dummy; 0.1 leaves one more frame
 
+	/// <summary>Mouse mode: a keyboard movement key while the buttons are held breaks the lock (and the cast), as vanilla would.</summary>
+	public bool CastAssistKeyboardBreaks { get; set; } = true;
+
 	/// <summary>Option C: stop before every GCD, even when the planned next GCD is instant.</summary>
 	public bool CastAssistAlwaysStop { get; set; } = false;
 
