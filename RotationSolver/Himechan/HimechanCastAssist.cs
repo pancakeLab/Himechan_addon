@@ -1,3 +1,6 @@
+using Dalamud.Game.ClientState.Conditions;
+using Dalamud.Game.ClientState.GamePad;
+using Dalamud.Game.ClientState.Keys;
 using Dalamud.Interface.Windowing;
 using ECommons.DalamudServices;
 using ECommons.GameHelpers;
@@ -6,6 +9,7 @@ using FFXIVClientStructs.FFXIV.Client.Game;
 using FFXIVClientStructs.FFXIV.Client.Game.Control;
 using FFXIVClientStructs.FFXIV.Client.System.Input;
 using FFXIVClientStructs.FFXIV.Client.UI;
+using System.Reflection;
 using System.Runtime.InteropServices;
 
 namespace RotationSolver.Himechan;
@@ -68,7 +72,10 @@ internal static class HimechanCastAssist
 	private static float _firstMoveLeft = -1f; // cast-bar time left when the character first moved after the release
 	private static bool _releasedThisCast;
 	private static float _fxLeft = -1f;
+	private static bool _fxArrived;          // the server resolved the current cast: moving is certainly safe now
+	private static ulong _castTarget;
 	private static string _castSource = "manual";
+	private static bool _pathsLogged;
 
 	/// <summary>The assist is switched on and would lock the next cast.</summary>
 	public static bool Armed { get; private set; }
@@ -119,7 +126,24 @@ internal static class HimechanCastAssist
 			return;
 		}
 
-		EnsureProfileConfig(settings);
+		// Direct lock (7.5.7.403): the movement counter itself, so RSR's unlock modifier (Ctrl, user complaint 2026-10-21:
+		// every Ctrl+hotkey mid-cast dropped the lock) no longer applies. RSR's setter path stays as the fallback.
+		var direct = DirectLockAvailable && !settings.CastAssistAllowRsrUnlockKey;
+		if (direct)
+		{
+			ReleaseOwnedPoslock(settings);
+		}
+		else
+		{
+			EnsureProfileConfig(settings);
+		}
+
+		if (!_pathsLogged)
+		{
+			_pathsLogged = true;
+			HimechanLog.Write("MOVE", string.Format("CAST ASSIST PATHS lock={0} mouseWin32={1} keyInputData={2}",
+				direct ? "direct" : "rsr-setter", !_win32Failed, !_inputDataFailed));
+		}
 
 		var inCombat = DataCenter.InCombat;
 		if (settings.CastAssistMode == ModeToggle && settings.CastAssistAutoOff && settings.CastAssistToggleOn && _wasInCombat && !inCombat)
@@ -133,13 +157,17 @@ internal static class HimechanCastAssist
 		// 2026-10-21: could not break a hard-cast Raise with the keyboard) counts as "break the cast now" and disarms for a moment.
 		var buttons = settings.CastAssistMode == ModeMouseHold && BothMouseButtonsDown();
 		var now = Environment.TickCount64;
-		if (buttons && settings.CastAssistKeyboardBreaks && KeyboardMoveIntent())
+		if (buttons && settings.CastAssistKeyboardBreaks)
 		{
-			if (now >= _keyBreakUntil)
+			var keySource = KeyboardMoveIntent();
+			if (keySource != null)
 			{
-				HimechanLog.Write("MOVE", "CAST ASSIST KEY BREAK (keyboard movement while the mouse buttons are held)");
+				if (now >= _keyBreakUntil)
+				{
+					HimechanLog.Write("MOVE", "CAST ASSIST KEY BREAK src=" + keySource);
+				}
+				_keyBreakUntil = now + KeyBreakMs;
 			}
-			_keyBreakUntil = now + KeyBreakMs;
 		}
 
 		Armed = settings.CastAssistMode switch
@@ -172,7 +200,10 @@ internal static class HimechanCastAssist
 		{
 			if (casting)
 			{
-				if (Array.IndexOf(ActionBasicInfo.ActionsNoNeedCasting, player.CastActionId) < 0 && left > slide)
+				// Release when the server has resolved the cast (its effect packet arrived: certain), otherwise only at
+				// slide - 0.05. Game log 2026-10-21: one Glare released at 0.47 was still rejected (effect would have come at 0.43).
+				var slideSafe = _fxArrived || left <= Math.Max(0.3f, slide - 0.05f);
+				if (Array.IndexOf(ActionBasicInfo.ActionsNoNeedCasting, player.CastActionId) < 0 && !slideSafe)
 				{
 					phase = PhaseCast;
 				}
@@ -219,9 +250,7 @@ internal static class HimechanCastAssist
 		}
 
 		var lockNow = phase != PhaseNone;
-		// RSR's setter already ORs in NoPoslock (unlock key / gamepad R1 / occupied), so the emergency release costs nothing here.
-		Service.CanMove = !lockNow;
-		_owned = true;
+		ApplyLock(lockNow, direct);
 		if (phase != _phase)
 		{
 			if (phase == PhasePreCast)
@@ -290,8 +319,7 @@ internal static class HimechanCastAssist
 		_heldId = actionId;
 		_heldTarget = targetObjectId;
 		_heldAt = Environment.TickCount64;
-		Service.CanMove = false; // stop this very frame, not on the next update
-		_owned = true;
+		ApplyLock(true, DirectLockAvailable && !HimechanSettings.Current.CastAssistAllowRsrUnlockKey); // stop this very frame
 		HimechanLog.Write("MOVE", string.Format("CAST ASSIST HOLD id={0} gcd={1:F2}", adjusted, DataCenter.DefaultGCDRemain));
 		return true;
 	}
@@ -354,10 +382,12 @@ internal static class HimechanCastAssist
 		if (casting && !_wasCasting && player != null)
 		{
 			_castId = player.CastActionId;
+			_castTarget = player.CastTargetObjectId;
 			_castStartedAt = Environment.TickCount64;
 			_firstMoveLeft = -1f;
 			_releasedThisCast = false;
 			_fxLeft = -1f;
+			_fxArrived = false;
 			if (Armed)
 			{
 				var sinceStop = _stopEngagedAt > 0 ? (Environment.TickCount64 - _stopEngagedAt) / 1000f : -1f;
@@ -383,9 +413,9 @@ internal static class HimechanCastAssist
 			var interrupted = _lastCastLeft > 0.1f;
 			var sinceStart = (Environment.TickCount64 - _castStartedAt) / 1000f;
 			HimechanLog.Write("MOVE", interrupted
-				? string.Format("CAST ASSIST MEASURE INTERRUPTED id={0} left={1:F2} sinceStart={2:F2} hadStop={3} armed={4} slideAt={5:F2} moving={6} bmrCancel={7}",
+				? string.Format("CAST ASSIST MEASURE INTERRUPTED id={0} left={1:F2} sinceStart={2:F2} hadStop={3} armed={4} slideAt={5:F2} moving={6} bmrCancel={7}{8}",
 					_castId, _lastCastLeft, sinceStart, _stopEngagedAt > 0, Armed, _firstMoveLeft, _movingLastFrame,
-					DataCenter.BMRForceCancelCast || DataCenter.BMRForceCancelCastAI)
+					DataCenter.BMRForceCancelCast || DataCenter.BMRForceCancelCastAI, RaiseTargetState())
 				: string.Format("CAST ASSIST MEASURE OK id={0} slideAt={1:F2} fxLeft={2:F2} armed={3}",
 					_castId, _firstMoveLeft, _fxLeft, Armed));
 			_castId = 0;
@@ -406,8 +436,29 @@ internal static class HimechanCastAssist
 
 		var player = Player.Object;
 		_fxLeft = player != null && player.IsCasting ? player.TotalCastTime - player.CurrentCastTime : 0f;
+		_fxArrived = true;
 		HimechanLog.Write("MOVE", string.Format("CAST ASSIST MEASURE FX id={0} left={1:F2} sinceStart={2:F2}",
 			actionId, _fxLeft, (Environment.TickCount64 - _castStartedAt) / 1000f));
+	}
+
+	/// <summary>For an interrupted Raise: was the target already raised by someone else (the likely cause)?</summary>
+	private static string RaiseTargetState()
+	{
+		if (_castId != (uint)ActionID.RaisePvE || _castTarget == 0)
+		{
+			return string.Empty;
+		}
+
+		try
+		{
+			var target = Svc.Objects.SearchById(_castTarget) as IBattleChara;
+			return target == null ? " target=gone"
+				: string.Format(" targetDead={0} targetRaised={1}", target.IsDead, target.HasStatus(false, StatusID.Raise, StatusID.ResurrectionDenied));
+		}
+		catch
+		{
+			return string.Empty;
+		}
 	}
 
 	/// <summary>Give the movement flag (and RSR's lock option) back. Safe to call repeatedly.</summary>
@@ -419,22 +470,109 @@ internal static class HimechanCastAssist
 		_phase = PhaseNone;
 		_stopEngagedAt = 0;
 		_heldId = 0;
+		_lockingNow = false;
+		ReleaseDirectLock();
 		if (_owned)
 		{
 			_owned = false;
-			_lockingNow = false;
 			Service.CanMove = true;
 		}
 
-		var settings = HimechanSettings.Current;
+		ReleaseOwnedPoslock(HimechanSettings.Current);
+	}
+
+	private static void ReleaseOwnedPoslock(HimechanSettings settings)
+	{
 		if (settings.CastAssistOwnsPoslock && HimechanProfile.IsActive)
 		{
 			settings.CastAssistOwnsPoslock = false;
 			Service.Config.PoslockCasting.Value = false;
 			HimechanSettings.Save();
-			PluginLog.Information("[Himechan] Cast assist off: RSR movement lock switched back off in the Himechan profile.");
+			PluginLog.Information("[Himechan] Cast assist: RSR movement lock switched back off in the Himechan profile.");
 		}
 	}
+
+	#region Movement flag
+	// The game's "movement disabled" counter that RSR's Service.CanMove wraps. RSR's setter ORs in NoPoslock (unlock modifier
+	// key, gamepad R1, cutscene), so the counter is read through RSR's private pointer instead: same signature, no second
+	// scan, and the Himechan profile no longer needs PoslockCasting. Falls back to the setter when the field is not found.
+	private static nint _counterPtr;
+	private static bool _counterLookedUp;
+	private static bool _directCounted;
+
+	private static unsafe bool DirectLockAvailable
+	{
+		get
+		{
+			if (!_counterLookedUp)
+			{
+				_counterLookedUp = true;
+				try
+				{
+					var field = typeof(Service).GetField("forceDisableMovementPtr", BindingFlags.NonPublic | BindingFlags.Static);
+					var value = field?.GetValue(null);
+					_counterPtr = value is nint p ? p : 0;
+				}
+				catch (Exception ex)
+				{
+					_counterPtr = 0;
+					PluginLog.Warning($"[Himechan] Cast assist: movement counter unavailable, using RSR's setter: {ex.Message}");
+				}
+			}
+
+			return _counterPtr != 0;
+		}
+	}
+
+	private static unsafe ref int Counter => ref *(int*)(_counterPtr + 4);
+
+	/// <summary>Direct path: only a cutscene or gamepad R1 releases; keyboard break and the mouse buttons are handled by Armed.</summary>
+	private static unsafe void ApplyLock(bool lockNow, bool direct)
+	{
+		if (!direct)
+		{
+			ReleaseDirectLock();
+			Service.CanMove = !lockNow;
+			_owned = true;
+			return;
+		}
+
+		if (_owned)
+		{
+			_owned = false;
+			Service.CanMove = true;
+		}
+
+		if (lockNow && (Svc.Condition[ConditionFlag.OccupiedInEvent] || Svc.GamepadState.Raw(GamepadButtons.R1) >= 0.5f))
+		{
+			lockNow = false;
+		}
+
+		if (lockNow && !_directCounted)
+		{
+			Counter++;
+			_directCounted = true;
+		}
+		else if (!lockNow)
+		{
+			ReleaseDirectLock();
+		}
+	}
+
+	private static unsafe void ReleaseDirectLock()
+	{
+		if (!_directCounted)
+		{
+			return;
+		}
+
+		_directCounted = false;
+		if (_counterPtr != 0 && Counter > 0)
+		{
+			Counter--;
+		}
+	}
+	#endregion
 
 	/// <summary>Service.CanMove can only lock while PoslockCasting is on; the mouse L+R unlock would cancel the arming gesture.</summary>
 	private static void EnsureProfileConfig(HimechanSettings settings)
@@ -495,8 +633,18 @@ internal static class HimechanCastAssist
 	private static readonly int[] MoveVirtualKeys = [0x57, 0x41, 0x53, 0x44, 0x51, 0x45, 0x25, 0x26, 0x27, 0x28];
 	private static bool _inputDataFailed;
 
-	/// <summary>A keyboard movement key is down: the game's own keybind state first, the default keys through Win32 as a backup.</summary>
-	private static unsafe bool KeyboardMoveIntent()
+	private static readonly VirtualKey[] MoveDalamudKeys =
+	[
+		VirtualKey.W, VirtualKey.A, VirtualKey.S, VirtualKey.D, VirtualKey.Q, VirtualKey.E,
+		VirtualKey.LEFT, VirtualKey.UP, VirtualKey.RIGHT, VirtualKey.DOWN,
+	];
+
+	/// <summary>
+	/// A keyboard movement key is down. Three sources, because the game may not register movement inputs while the
+	/// movement counter is set (game log 2026-10-21: no KEY BREAK ever fired during a lock): the game's keybind state,
+	/// Dalamud's key state and Win32 for the default keys. Returns the source that saw it, null when none did.
+	/// </summary>
+	private static unsafe string? KeyboardMoveIntent()
 	{
 		if (!_inputDataFailed)
 		{
@@ -509,7 +657,7 @@ internal static class HimechanCastAssist
 					{
 						if (input->IsInputIdDown(id))
 						{
-							return true;
+							return "inputdata";
 						}
 					}
 				}
@@ -521,9 +669,24 @@ internal static class HimechanCastAssist
 			}
 		}
 
+		try
+		{
+			foreach (var key in MoveDalamudKeys)
+			{
+				if (Svc.KeyState[key])
+				{
+					return "keystate";
+				}
+			}
+		}
+		catch (Exception ex)
+		{
+			PluginLog.Debug($"[Himechan] Cast assist: Dalamud key state failed: {ex.Message}");
+		}
+
 		if (_win32Failed)
 		{
-			return false;
+			return null;
 		}
 
 		try
@@ -531,14 +694,14 @@ internal static class HimechanCastAssist
 			_ = GetWindowThreadProcessId(GetForegroundWindow(), out var pid);
 			if (pid != Environment.ProcessId)
 			{
-				return false;
+				return null;
 			}
 
 			foreach (var key in MoveVirtualKeys)
 			{
 				if ((GetAsyncKeyState(key) & 0x8000) != 0)
 				{
-					return true;
+					return "win32";
 				}
 			}
 		}
@@ -548,7 +711,7 @@ internal static class HimechanCastAssist
 			PluginLog.Warning($"[Himechan] Cast assist: live key state unavailable: {ex.Message}");
 		}
 
-		return false;
+		return null;
 	}
 
 	private static bool BothMouseButtonsDown()

@@ -151,7 +151,7 @@ internal sealed class HimechanWindow : Window
 			settings.CastAssistMode = mode;
 			HimechanSettings.Save();
 		}
-		ImGui.TextWrapped("켜진 동안 시전 중 이동 입력은 슬라이딩 캐스팅 시점(위 \"이동·선입력 가능 시작\" 값)까지 보류됐다가 그 순간 출발하고, 다음 GCD가 시전형이면 GCD 준비 직전(아래 여유)에 다시 멈춰 시전이 끊기지 않게 이어집니다. 그 사이 틈에서는 자유롭게 움직입니다. 급히 끊고 움직이려면 RSR 설정의 \"이동 잠금을 잠시 푸는 보조 키\"(기본 Ctrl) 또는 게임패드 R1을 누른 채 이동하세요. 히메짱 프로필의 RSR \"시전 중 이동 잠금\"은 이 기능이 켜고 끕니다.");
+		ImGui.TextWrapped("켜진 동안 시전 중 이동 입력은 서버가 시전을 확정한 순간(효과 도착, 보통 시전바 잔여 0.42~0.50초) 또는 \"이동·선입력 가능 시작\" − 0.05초 중 먼저 오는 때 풀리고, 다음 GCD가 시전형이면 GCD 준비 직전(아래 여유)에 다시 멈춰 시전이 끊기지 않게 이어집니다. 그 사이 틈에서는 자유롭게 움직입니다.");
 
 		var stopMargin = settings.CastAssistStopMargin;
 		ImGui.SetNextItemWidth(200);
@@ -175,6 +175,14 @@ internal sealed class HimechanWindow : Window
 			}
 			ImGui.TextWrapped("양 버튼을 누르고 있는 동안은 키보드 이동도 잠기므로, 이 옵션이 꺼져 있으면 RSR 보조 키(기본 Ctrl)나 버튼을 떼야 끊을 수 있습니다. 게임 키 설정의 이동 키를 읽고, 기본 키(WASD·QE·방향키)는 예비로 함께 봅니다.");
 		}
+
+		var allowUnlockKey = settings.CastAssistAllowRsrUnlockKey;
+		if (ImGui.Checkbox("RSR 보조 키(기본 Ctrl)를 누르면 잠금 해제 (RSR 잠금 경로 사용)", ref allowUnlockKey))
+		{
+			settings.CastAssistAllowRsrUnlockKey = allowUnlockKey;
+			HimechanSettings.Save();
+		}
+		ImGui.TextWrapped("기본 꺼짐: Ctrl+단축키를 눌러도 잠금이 풀리지 않습니다. 끊고 싶을 때는 키보드 이동 키(마우스 방식)나 버튼 떼기, 게임패드 R1을 쓰세요. 컷신은 항상 풀립니다.");
 
 		var unplanned = settings.CastAssistStopWhenUnplanned;
 		if (ImGui.Checkbox("계획이 없어도 GCD 준비 직전에 정지 (수동 모드에서 미리 멈춤)", ref unplanned))
