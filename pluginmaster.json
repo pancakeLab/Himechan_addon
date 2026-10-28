@@ -44,8 +44,8 @@
         "Author":  "pancakeLab",
         "Name":  "히메짱 옷장 정리기",
         "InternalName":  "KRWardrobeCleaner",
-        "AssemblyVersion":  "0.13.1.0",
-        "TestingAssemblyVersion":  "0.13.1.0",
+        "AssemblyVersion":  "0.14.0.0",
+        "TestingAssemblyVersion":  "0.14.0.0",
         "Description":  "4개 탭으로 분리된 FF14 장비 정리 도구. 옷장 복원, 옷장 저장, 장비함 이동, 스마트 자동 파기와 4번 인벤토리 전체 파기를 지원합니다.\n\n한국 서버 전용입니다. 소스는 비공개이며 이 저장소는 배포 전용입니다.",
         "Punchline":  "만사가 귀찮은 공주님들을 위한 자동 정리 집사님!",
         "ApplicableVersion":  "any",
@@ -75,11 +75,11 @@
         "IsTestingExclusive":  false,
         "IsHide":  false,
         "AcceptsFeedback":  false,
-        "DownloadLinkInstall":  "https://github.com/pancakeLab/KRWardrobeCleaner/releases/download/v0.13.1.0/KRWardrobeCleaner.zip",
-        "DownloadLinkUpdate":  "https://github.com/pancakeLab/KRWardrobeCleaner/releases/download/v0.13.1.0/KRWardrobeCleaner.zip",
-        "DownloadLinkTesting":  "https://github.com/pancakeLab/KRWardrobeCleaner/releases/download/v0.13.1.0/KRWardrobeCleaner.zip",
-        "Changelog":  "히메짱 옷장 정리기 0.13.1.0\n\n0.13.1: 옷장에서 꺼낼 때 요청이 연속 거절되던 문제 수정(이전 요청이 반영될 때까지 기다린 뒤 다음 요청, 거절 시 최대 6회 재시도) — 1번 탭 두 모드와 1-2 중복 정리 모두 적용. 직업 필터에 기본 클래스(검술사·도끼술사·격투사·창술사·쌍검사·궁술사·환술사·주술사·비술사) 추가.\n\n- KRWardrobeCleaner.zip SHA256: E573C6EAE949F82AC244EBE8DBC98A779844C4F1BC1D7062F8E938DC89BC2331",
-        "LastUpdate":  1792996547,
+        "DownloadLinkInstall":  "https://github.com/pancakeLab/KRWardrobeCleaner/releases/download/v0.14.0.0/KRWardrobeCleaner.zip",
+        "DownloadLinkUpdate":  "https://github.com/pancakeLab/KRWardrobeCleaner/releases/download/v0.14.0.0/KRWardrobeCleaner.zip",
+        "DownloadLinkTesting":  "https://github.com/pancakeLab/KRWardrobeCleaner/releases/download/v0.14.0.0/KRWardrobeCleaner.zip",
+        "Changelog":  "히메짱 옷장 정리기 0.14.0.0\n\n0.14.0: 2번 탭(가방 → 옷장)에 실행 기록·실패 사유 요약·행별 직전 결과 표시, 실패한 단벌은 한 번 자동 재시도, 선택 아이템 대조를 요청 뒤 바뀐 경우로 한정. 필터에 추억의 보관함(대상/대상 아님) 추가. 1번 탭 필터 모드에 세트 단위로 꺼내기(기본 켬).\n\n- KRWardrobeCleaner.zip SHA256: C908B9C9BEE5013D0CD60B55CD304E730191462E1D63B0BE40668292932FF744",
+        "LastUpdate":  1793173339,
         "DownloadCount":  0
     }
 ]
