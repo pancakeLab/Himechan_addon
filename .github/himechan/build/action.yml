@@ -69,7 +69,7 @@ runs:
         $manifest = Get-Content build/RotationSolver/RotationSolver.json -Raw | ConvertFrom-Json
         "latest.zip SHA256: $sha"
         "packaged manifest: InternalName=$($manifest.InternalName) AssemblyVersion=$($manifest.AssemblyVersion) DalamudApiLevel=$($manifest.DalamudApiLevel)"
-        foreach ($dll in @("build/RotationSolver.dll", "build/RotationSolver.Basic.dll")) {
+        foreach ($dll in @("build/RotationSolver.dll", "build/RotationSolver.Basic.dll") | Where-Object { Test-Path $_ }) {
           $v = [System.Diagnostics.FileVersionInfo]::GetVersionInfo((Resolve-Path $dll))
           "{0}: FileVersion={1} ProductVersion={2}" -f (Split-Path $dll -Leaf), $v.FileVersion, $v.ProductVersion
         }
