@@ -13,6 +13,7 @@ internal static partial class HimechanKoreanStrings
 	{
 		AddUiStrings();
 		AddConfigNames();
+		AddUpstream7513();
 		AddConfigDescriptions();
 	}
 
